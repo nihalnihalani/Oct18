@@ -18,39 +18,73 @@ export async function POST(req: Request) {
 
     console.log("Generating image with prompt:", prompt);
 
-    // Use the correct Gemini model for image generation
-    const model = 'gemini-2.5-flash-image-preview';
-    
+    // Check if generateImages method exists
+    console.log("Available methods on ai.models:", Object.getOwnPropertyNames(ai.models));
+    console.log("Available methods on ai:", Object.getOwnPropertyNames(ai));
+
+    // Try different approaches
     try {
-      console.log(`Using model: ${model}`);
+      // First try: Check if generateImages exists
+      if (typeof ai.models.generateImages === 'function') {
+        console.log("generateImages method exists, trying...");
+        
+        const resp = await ai.models.generateImages({
+          prompt,
+        });
+
+        console.log("Image generation response:", resp);
+
+        const image = resp.generatedImages?.[0]?.image;
+        if (image?.imageBytes) {
+          console.log("Success with generateImages");
+          return NextResponse.json({
+            image: {
+              imageBytes: image.imageBytes,
+              mimeType: image.mimeType || "image/png",
+            },
+          });
+        }
+      } else {
+        console.log("generateImages method does not exist");
+      }
+    } catch (apiError) {
+      console.error("generateImages failed:", apiError);
+    }
+
+    // Try alternative approach - maybe it's a different method
+    try {
+      console.log("Trying alternative approach...");
       
-      const resp = await ai.models.generateImages({
-        model,
-        prompt,
+      // Check if there's a different method for image generation
+      const resp = await ai.generateContent({
+        model: 'gemini-1.5-flash',
+        contents: [{
+          parts: [{
+            text: `Generate an image of: ${prompt}`
+          }]
+        }]
       });
 
-      console.log(`Image generation response for ${model}:`, resp);
-
-      const image = resp.generatedImages?.[0]?.image;
-      if (image?.imageBytes) {
-        console.log(`Success with model: ${model}`);
-        return NextResponse.json({
-          image: {
-            imageBytes: image.imageBytes,
-            mimeType: image.mimeType || "image/png",
-          },
-        });
-      } else {
-        console.error("No image returned from API");
-        return NextResponse.json({ error: "No image returned" }, { status: 500 });
-      }
-    } catch (modelError) {
-      console.error(`Model ${model} failed:`, modelError);
-      return NextResponse.json(
-        { error: `Image generation failed: ${modelError instanceof Error ? modelError.message : 'Unknown error'}` },
-        { status: 500 }
-      );
+      console.log("Alternative response:", resp);
+      
+      // This might not work for image generation, but let's see what we get
+      return NextResponse.json({
+        error: "Image generation not supported with current API method",
+        debug: "Tried alternative approach but image generation may not be available"
+      });
+      
+    } catch (altError) {
+      console.error("Alternative approach failed:", altError);
     }
+
+    // All attempts failed
+    return NextResponse.json(
+      { 
+        error: "Image generation is not available with the current Google GenAI package. The generateImages method may not be supported or the models may not support image generation.",
+        suggestion: "Consider using a different image generation service or check if image generation is available in your region."
+      },
+      { status: 500 }
+    );
   } catch (error) {
     console.error("Error generating image:", error);
     return NextResponse.json(
