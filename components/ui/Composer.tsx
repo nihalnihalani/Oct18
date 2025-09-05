@@ -146,7 +146,12 @@ const Composer: React.FC<ComposerProps> = ({
                 />
               </div>
               <button
-                onClick={generateWithImagen}
+                onClick={() => {
+                  console.log("Image generation button clicked!");
+                  console.log("imagePrompt:", imagePrompt);
+                  console.log("imagenBusy:", imagenBusy);
+                  generateWithImagen();
+                }}
                 disabled={!imagePrompt.trim() || imagenBusy}
                 aria-busy={imagenBusy}
                 className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${

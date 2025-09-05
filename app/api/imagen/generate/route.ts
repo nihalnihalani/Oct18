@@ -18,60 +18,69 @@ export async function POST(req: Request) {
 
     console.log("Generating image with prompt:", prompt);
 
-    // Try different approaches for image generation
+    // Try different models and approaches
+    const modelsToTry = [
+      "imagen-3.0-generate-001",
+      "imagen-3.0-fast-generate-001", 
+      "imagen-3.0-generate",
+      "imagen-3.0-fast-generate"
+    ];
+
+    for (const model of modelsToTry) {
+      try {
+        console.log(`Trying model: ${model}`);
+        
+        const resp = await ai.models.generateImages({
+          model,
+          prompt,
+        });
+
+        console.log(`Image generation response for ${model}:`, resp);
+
+        const image = resp.generatedImages?.[0]?.image;
+        if (image?.imageBytes) {
+          console.log(`Success with model: ${model}`);
+          return NextResponse.json({
+            image: {
+              imageBytes: image.imageBytes,
+              mimeType: image.mimeType || "image/png",
+            },
+          });
+        }
+      } catch (modelError) {
+        console.error(`Model ${model} failed:`, modelError);
+        continue; // Try next model
+      }
+    }
+
+    // If all models fail, try without specifying model
     try {
-      // First try: Direct model call
+      console.log("Trying without specifying model");
       const resp = await ai.models.generateImages({
-        model: "imagen-3.0-generate-001",
         prompt,
       });
 
-      console.log("Image generation response:", resp);
+      console.log("Image generation response (no model):", resp);
 
       const image = resp.generatedImages?.[0]?.image;
-      if (!image?.imageBytes) {
-        console.error("No image returned from API");
-        return NextResponse.json({ error: "No image returned" }, { status: 500 });
-      }
-
-      return NextResponse.json({
-        image: {
-          imageBytes: image.imageBytes,
-          mimeType: image.mimeType || "image/png",
-        },
-      });
-    } catch (apiError) {
-      console.error("First API attempt failed:", apiError);
-      
-      // Second try: Different model
-      try {
-        const resp2 = await ai.models.generateImages({
-          model: "imagen-3.0-generate-001",
-          prompt,
-          config: {
-            aspectRatio: "16:9",
-          },
-        });
-
-        console.log("Second image generation response:", resp2);
-
-        const image = resp2.generatedImages?.[0]?.image;
-        if (!image?.imageBytes) {
-          console.error("No image returned from second API attempt");
-          return NextResponse.json({ error: "No image returned" }, { status: 500 });
-        }
-
+      if (image?.imageBytes) {
+        console.log("Success without specifying model");
         return NextResponse.json({
           image: {
             imageBytes: image.imageBytes,
             mimeType: image.mimeType || "image/png",
           },
         });
-      } catch (apiError2) {
-        console.error("Second API attempt failed:", apiError2);
-        throw apiError2;
       }
+    } catch (noModelError) {
+      console.error("No model specified failed:", noModelError);
     }
+
+    // All attempts failed
+    return NextResponse.json(
+      { error: "All image generation attempts failed. Please check your API key and model access." },
+      { status: 500 }
+    );
   } catch (error) {
     console.error("Error generating image:", error);
     return NextResponse.json(
