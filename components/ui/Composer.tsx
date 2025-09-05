@@ -9,6 +9,7 @@ import {
   Loader2,
   RotateCcw,
   X,
+  Images,
 } from "lucide-react";
 import NextImage from "next/image";
 import ModelSelector from "@/components/ui/ModelSelector";
@@ -39,6 +40,10 @@ interface ComposerProps {
 
   resetAll: () => void;
   closeGeneratedImage: () => void;
+  
+  // Gallery props
+  onOpenGallery: () => void;
+  galleryItemCount: number;
 }
 
 const Composer: React.FC<ComposerProps> = ({
@@ -60,6 +65,8 @@ const Composer: React.FC<ComposerProps> = ({
   generatedImage,
   resetAll,
   closeGeneratedImage,
+  onOpenGallery,
+  galleryItemCount,
 }) => {
   const [isDragging, setIsDragging] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -216,20 +223,36 @@ const Composer: React.FC<ComposerProps> = ({
       
       <div className="backdrop-blur-xl bg-gray-800/90 shadow-2xl rounded-3xl border border-gray-700 p-6">
         <div className="flex items-center justify-between mb-4">
-          <button
-            type="button"
-            aria-pressed={showImageTools}
-            onClick={() => setShowImageTools((s) => !s)}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
-              showImageTools
-                ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg"
-                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-            }`}
-            title="Image to Video"
-          >
-            <Plus className="w-4 h-4" />
-            Image
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              aria-pressed={showImageTools}
+              onClick={() => setShowImageTools((s) => !s)}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
+                showImageTools
+                  ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg"
+                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+              }`}
+              title="Image to Video"
+            >
+              <Plus className="w-4 h-4" />
+              Image
+            </button>
+            
+            <button
+              onClick={onOpenGallery}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-700 text-gray-300 hover:bg-gray-600 transition-all font-medium"
+              title="Product Gallery"
+            >
+              <Images className="w-4 h-4" />
+              Gallery
+              {galleryItemCount > 0 && (
+                <span className="px-2 py-0.5 bg-purple-500 text-white text-xs rounded-full">
+                  {galleryItemCount}
+                </span>
+              )}
+            </button>
+          </div>
 
           <ModelSelector
             selectedModel={selectedModel}

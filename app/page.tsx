@@ -162,9 +162,9 @@ const VeoStudio: React.FC = () => {
       const json = await resp.json();
       console.log("Image generation response:", json);
       
-                if (json?.image?.imageBytes) {
-            const dataUrl = `data:${json.image.mimeType};base64,${json.image.imageBytes}`;
-            setGeneratedImage(dataUrl);
+      if (json?.image?.imageBytes) {
+        const dataUrl = `data:${json.image.mimeType};base64,${json.image.imageBytes}`;
+        setGeneratedImage(dataUrl);
             
             // Add to gallery
             addToGallery({
@@ -179,7 +179,7 @@ const VeoStudio: React.FC = () => {
           } else {
             console.error("No image data in response:", json);
             alert("No image data received from server");
-          }
+      }
     } catch (e) {
       console.error("Image generation error:", e);
       alert(`Image generation failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
@@ -569,6 +569,8 @@ const VeoStudio: React.FC = () => {
         generatedImage={generatedImage}
         resetAll={resetAll}
         closeGeneratedImage={closeGeneratedImage}
+        onOpenGallery={() => setShowGallery(true)}
+        galleryItemCount={galleryItems.length}
       />
 
       {/* Product Gallery */}
