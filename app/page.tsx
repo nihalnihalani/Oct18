@@ -227,26 +227,48 @@ const VeoStudio: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen w-full text-stone-900">
-      <div className="absolute top-4 left-4 z-20 hidden md:block">
-        <h1 className="text-lg font-semibold text-slate-900/80 backdrop-blur-sm bg-white/20 px-3 py-1 rounded-lg">
-          Veo 3
-        </h1>
+    <div className="relative min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%239C92AC%22%20fill-opacity%3D%220.05%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-40"></div>
+      
+      {/* Header */}
+      <div className="absolute top-6 left-6 z-20 hidden md:block animate-fadeInUp">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <span className="text-white font-bold text-lg">V</span>
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-slate-800">Veo 3 Studio</h1>
+            <p className="text-sm text-slate-600">AI Video Generation</p>
+          </div>
+        </div>
       </div>
-      {/* Center hint or video */}
+
+      {/* Center content */}
       <div className="flex items-center justify-center min-h-screen pb-40 px-4">
         {!videoUrl &&
           (isGenerating ? (
-            <div className="text-stone-700 select-none inline-flex items-center gap-2">
-              <Clock className="w-4 h-4 animate-spin" /> Generating Video...
+            <div className="text-center">
+              <div className="inline-flex items-center gap-3 px-6 py-4 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20">
+                <div className="w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-slate-700 font-medium">Generating your video...</span>
+              </div>
+              <p className="text-slate-500 text-sm mt-3">This may take a few minutes</p>
             </div>
           ) : (
-            <div className="text-stone-400 select-none">
-              Nothing to see here yet.
+            <div className="text-center max-w-md animate-fadeInUp">
+              <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+                <span className="text-white text-4xl">🎬</span>
+              </div>
+              <h2 className="text-2xl font-bold text-slate-800 mb-3">Create Amazing Videos</h2>
+              <p className="text-slate-600 leading-relaxed">
+                Generate stunning videos from text prompts using Google's Veo 3 AI model. 
+                Upload images or generate them with Imagen 4 for even more creative possibilities.
+              </p>
             </div>
           ))}
         {videoUrl && (
-          <div className="w-full max-w-3xl">
+          <div className="w-full max-w-4xl">
             <VideoPlayer
               src={videoUrl}
               onOutputChanged={handleTrimmedOutput}
