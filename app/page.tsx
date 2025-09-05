@@ -387,7 +387,7 @@ const VeoStudio: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 pt-8 pb-20">
+      <main className="relative z-10 pt-8 pb-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {!videoUrl ? (
             <div className="text-center py-20">

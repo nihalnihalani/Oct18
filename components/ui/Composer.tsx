@@ -94,7 +94,7 @@ const Composer: React.FC<ComposerProps> = ({
   };
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 w-[min(100%,52rem)] px-4">
+    <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-20 w-[min(100%,52rem)] px-4">
       {showImageTools && (
         <div className="mb-4 rounded-3xl backdrop-blur-xl bg-gray-800/90 shadow-2xl border border-gray-700 p-6">
           <div className="space-y-4">
