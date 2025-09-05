@@ -340,8 +340,8 @@ export default function VideoPlayer({
   const totalDisplaySeconds = safeDisplaySpan;
 
   return (
-    <div className="w-full max-w-5xl mx-auto">
-      <div className="relative aspect-video overflow-hidden rounded-2xl shadow-2xl bg-slate-900">
+    <div className="w-full max-w-6xl mx-auto">
+      <div className="relative aspect-video overflow-hidden rounded-3xl shadow-2xl bg-gray-900 border border-gray-700">
         <video
           ref={playerRef}
           src={src}
@@ -372,12 +372,12 @@ export default function VideoPlayer({
         />
 
         {/* Video overlay controls */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300">
           <div className="absolute bottom-4 left-4 right-4">
             <div className="flex items-center gap-3">
               <button
                 onClick={handlePlayPause}
-                className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all"
+                className="w-12 h-12 bg-gray-800/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-gray-700/80 transition-all hover:scale-110"
               >
                 {playing ? (
                   <Pause className="w-6 h-6 text-white" />
@@ -386,7 +386,7 @@ export default function VideoPlayer({
                 )}
               </button>
               
-              <div className="flex-1 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+              <div className="flex-1 bg-gray-800/80 backdrop-blur-sm rounded-full px-4 py-2">
                 <Slider
                   min={0}
                   max={1}
@@ -398,8 +398,8 @@ export default function VideoPlayer({
                   styles={{
                     track: { backgroundColor: "rgba(255,255,255,0.3)", height: 6 },
                     handle: { 
-                      backgroundColor: "#3b82f6", 
-                      borderColor: "#3b82f6",
+                      backgroundColor: "#8b5cf6", 
+                      borderColor: "#8b5cf6",
                       width: 16,
                       height: 16,
                       marginTop: -5
@@ -419,9 +419,9 @@ export default function VideoPlayer({
         {/* Bottom overlay trim bar (toggleable) */}
         {showTrimBar && (
           <div className="absolute left-0 right-0 bottom-2 z-20 px-4">
-            <div className="backdrop-blur-md bg-white/90 rounded-2xl px-4 py-3 shadow-xl border border-white/20">
+            <div className="backdrop-blur-xl bg-gray-800/90 rounded-2xl px-4 py-3 shadow-xl border border-gray-700">
               <div className="flex items-center gap-4">
-                <span className="text-sm font-medium text-slate-700 min-w-12 text-center">
+                <span className="text-sm font-medium text-white min-w-12 text-center">
                   {formatTime(trimRange[0])}
                 </span>
                 <div className="relative flex-1 h-8 flex">
@@ -429,7 +429,7 @@ export default function VideoPlayer({
                     className="absolute inset-y-0 left-0 pointer-events-none z-0"
                     style={{
                       width: `${(trimRange[0] / (duration || 1)) * 100}%`,
-                      backgroundColor: "rgba(0,0,0,0.3)",
+                      backgroundColor: "rgba(0,0,0,0.5)",
                       borderRadius: 12,
                       height: 32,
                     }}
@@ -438,7 +438,7 @@ export default function VideoPlayer({
                     className="absolute inset-y-0 right-0 pointer-events-none z-0"
                     style={{
                       width: `${(1 - trimRange[1] / (duration || 1)) * 100}%`,
-                      backgroundColor: "rgba(0,0,0,0.3)",
+                      backgroundColor: "rgba(0,0,0,0.5)",
                       borderRadius: 12,
                       height: 32,
                     }}
@@ -461,28 +461,28 @@ export default function VideoPlayer({
                           width: 12,
                           height: 32,
                           borderRadius: 6,
-                          backgroundColor: "#3b82f6",
-                          borderColor: "#3b82f6",
+                          backgroundColor: "#8b5cf6",
+                          borderColor: "#8b5cf6",
                           marginBottom: 0,
                         },
                       }}
                     />
                   </div>
                 </div>
-                <span className="text-sm font-medium text-slate-700 min-w-12 text-center">
+                <span className="text-sm font-medium text-white min-w-12 text-center">
                   {formatTime(trimRange[1])}
                 </span>
                 <div className="flex items-center gap-2 pl-2">
                   <button
                     onClick={handleTrim}
-                    className="inline-flex items-center gap-2 h-9 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-sm font-medium cursor-pointer transition-all transform hover:scale-105"
+                    className="inline-flex items-center gap-2 h-9 px-4 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-sm font-medium cursor-pointer transition-all transform hover:scale-105"
                   >
                     <Scissors className="w-4 h-4" />
                     Cut
                   </button>
                   <button
                     onClick={handleResetTrim}
-                    className="inline-flex items-center gap-2 h-9 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-2 h-9 px-4 rounded-xl bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-medium cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={!isTrimmed}
                   >
                     Reset
@@ -496,10 +496,10 @@ export default function VideoPlayer({
 
       {/* Controls below the video */}
       <div className="mt-6">
-        <div className="flex items-center gap-4 backdrop-blur-md bg-white/90 rounded-2xl px-6 py-4 shadow-xl border border-white/20">
+        <div className="flex items-center gap-4 backdrop-blur-xl bg-gray-800/90 rounded-2xl px-6 py-4 shadow-xl border border-gray-700">
           <button
             onClick={handlePlayPause}
-            className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl flex items-center justify-center text-white transition-all transform hover:scale-105 shadow-lg"
+            className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-xl flex items-center justify-center text-white transition-all transform hover:scale-105 shadow-lg"
           >
             {playing ? (
               <Pause className="w-6 h-6" />
@@ -518,27 +518,27 @@ export default function VideoPlayer({
               onChange={handleSeekChange}
               onAfterChange={() => setSeeking(false)}
               styles={{
-                track: { backgroundColor: "#e2e8f0", height: 8 },
+                track: { backgroundColor: "#374151", height: 8 },
                 handle: { 
-                  backgroundColor: "#3b82f6", 
-                  borderColor: "#3b82f6",
+                  backgroundColor: "#8b5cf6", 
+                  borderColor: "#8b5cf6",
                   width: 20,
                   height: 20,
                   marginTop: -6
                 },
-                rail: { backgroundColor: "#f1f5f9", height: 8 }
+                rail: { backgroundColor: "#1f2937", height: 8 }
               }}
             />
           </div>
           
-          <div className="text-sm font-medium text-slate-700 min-w-[120px] text-center">
+          <div className="text-sm font-medium text-white min-w-[120px] text-center">
             {formatTime(currentDisplaySeconds)} / {formatTime(totalDisplaySeconds)}
           </div>
           
           <div className="flex items-center gap-3">
             <button
               onClick={toggleMute}
-              className="w-10 h-10 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center justify-center text-slate-600 transition-all"
+              className="w-10 h-10 bg-gray-700 hover:bg-gray-600 rounded-xl flex items-center justify-center text-gray-300 transition-all"
             >
               {muted || volume === 0 ? (
                 <VolumeX className="w-5 h-5" />
@@ -555,15 +555,15 @@ export default function VideoPlayer({
                 value={volume}
                 onChange={handleVolumeChange}
                 styles={{
-                  track: { backgroundColor: "#e2e8f0", height: 6 },
+                  track: { backgroundColor: "#374151", height: 6 },
                   handle: { 
-                    backgroundColor: "#3b82f6", 
-                    borderColor: "#3b82f6",
+                    backgroundColor: "#8b5cf6", 
+                    borderColor: "#8b5cf6",
                     width: 16,
                     height: 16,
                     marginTop: -5
                   },
-                  rail: { backgroundColor: "#f1f5f9", height: 6 }
+                  rail: { backgroundColor: "#1f2937", height: 6 }
                 }}
               />
             </div>
@@ -573,8 +573,8 @@ export default function VideoPlayer({
               title={showTrimBar ? "Hide trimmer" : "Show trimmer"}
               className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
                 showTrimBar 
-                  ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white" 
-                  : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+                  ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white" 
+                  : "bg-gray-700 hover:bg-gray-600 text-gray-300"
               }`}
             >
               <Scissors className="w-5 h-5" />
@@ -583,7 +583,7 @@ export default function VideoPlayer({
             <button
               onClick={onDownload}
               title="Download"
-              className="w-10 h-10 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-xl flex items-center justify-center text-white transition-all transform hover:scale-105 shadow-lg"
+              className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-xl flex items-center justify-center text-white transition-all transform hover:scale-105 shadow-lg"
             >
               <Download className="w-5 h-5" />
             </button>

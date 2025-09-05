@@ -29,7 +29,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
         aria-label="Model selector"
         value={selectedModel}
         onChange={(e) => setSelectedModel(e.target.value)}
-        className="pl-4 pr-10 py-3 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none font-medium text-slate-700 shadow-sm hover:shadow-md transition-all"
+        className="pl-4 pr-10 py-3 text-sm rounded-xl border border-gray-600 bg-gray-900/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none font-medium text-white shadow-sm hover:shadow-md transition-all hover:bg-gray-800/50"
       >
         {models.map((model) => (
           <option key={model} value={model}>
@@ -37,7 +37,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
           </option>
         ))}
       </select>
-      <ChevronDown className="absolute right-3 h-5 w-5 text-slate-400 pointer-events-none" />
+      <ChevronDown className="absolute right-3 h-5 w-5 text-gray-400 pointer-events-none" />
     </div>
   );
 };

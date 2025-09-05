@@ -271,61 +271,123 @@ const VeoStudio: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%239C92AC%22%20fill-opacity%3D%220.05%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-40"></div>
-      
-      {/* Header */}
-      <div className="absolute top-6 left-6 z-20 hidden md:block animate-fadeInUp">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-            <span className="text-white font-bold text-lg">V</span>
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-slate-800">Veo 3 Studio</h1>
-            <p className="text-sm text-slate-600">AI Video Generation</p>
-          </div>
+    <div className="min-h-screen bg-gray-900 text-white">
+      {/* Animated Background */}
+      <div className="fixed inset-0 overflow-hidden">
+        <div className="absolute -inset-10 opacity-50">
+          <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl animate-blob"></div>
+          <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000"></div>
+          <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"></div>
         </div>
       </div>
 
-      {/* Center content */}
-      <div className="flex items-center justify-center min-h-screen pb-40 px-4">
-        {!videoUrl &&
-          (isGenerating || isDownloading ? (
-            <div className="text-center">
-              <div className="inline-flex items-center gap-3 px-6 py-4 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20">
-                <div className="w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-slate-700 font-medium">
-                  {isGenerating ? "Generating your video..." : "Downloading your video..."}
-                </span>
+      {/* Header */}
+      <header className="relative z-10 border-b border-gray-800 bg-gray-900/80 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-xl">V3</span>
               </div>
-              <p className="text-slate-500 text-sm mt-3">
-                {isGenerating ? "This may take a few minutes" : "Almost ready!"}
-              </p>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  Veo 3 Studio
+                </h1>
+                <p className="text-gray-400 text-sm">Next-Gen AI Video Creation</p>
+              </div>
+            </div>
+            
+            <div className="hidden md:flex items-center space-x-6">
+              <div className="flex items-center space-x-2 text-sm text-gray-400">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span>API Connected</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="relative z-10 pt-8 pb-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {!videoUrl ? (
+            <div className="text-center py-20">
+              {isGenerating || isDownloading ? (
+                <div className="max-w-md mx-auto">
+                  <div className="relative">
+                    <div className="w-32 h-32 mx-auto mb-8 relative">
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 animate-spin"></div>
+                      <div className="absolute inset-2 rounded-full bg-gray-900 flex items-center justify-center">
+                        <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                    {isGenerating ? "Creating Magic..." : "Preparing Your Video..."}
+                  </h2>
+                  <p className="text-gray-400 text-lg">
+                    {isGenerating ? "Our AI is crafting your vision into reality" : "Almost ready to unveil your creation"}
+                  </p>
+                  <div className="mt-8 flex justify-center">
+                    <div className="flex space-x-2">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce animation-delay-200"></div>
+                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce animation-delay-400"></div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="max-w-2xl mx-auto">
+                  <div className="mb-12">
+                    <div className="w-40 h-40 mx-auto mb-8 relative group">
+                      <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 opacity-75 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      <div className="absolute inset-2 rounded-2xl bg-gray-900 flex items-center justify-center">
+                        <div className="text-6xl group-hover:scale-110 transition-transform duration-300">🎥</div>
+                      </div>
+                    </div>
+                    <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-purple-400 via-pink-400 to-red-400 bg-clip-text text-transparent">
+                      Create Cinematic Magic
+                    </h1>
+                    <p className="text-xl text-gray-300 leading-relaxed mb-8">
+                      Transform your ideas into stunning videos with Google's most advanced AI. 
+                      From simple prompts to complex scenes, bring your imagination to life.
+                    </p>
+                  </div>
+                  
+                  <div className="grid md:grid-cols-3 gap-6 mb-12">
+                    <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700 hover:border-purple-500 transition-colors duration-300">
+                      <div className="text-3xl mb-4">✨</div>
+                      <h3 className="text-lg font-semibold mb-2">AI-Powered</h3>
+                      <p className="text-gray-400 text-sm">Advanced Veo 3 model for realistic video generation</p>
+                    </div>
+                    <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700 hover:border-pink-500 transition-colors duration-300">
+                      <div className="text-3xl mb-4">🎨</div>
+                      <h3 className="text-lg font-semibold mb-2">Creative Control</h3>
+                      <p className="text-gray-400 text-sm">Customize aspect ratios, models, and visual styles</p>
+                    </div>
+                    <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700 hover:border-red-500 transition-colors duration-300">
+                      <div className="text-3xl mb-4">⚡</div>
+                      <h3 className="text-lg font-semibold mb-2">Lightning Fast</h3>
+                      <p className="text-gray-400 text-sm">Generate high-quality videos in minutes, not hours</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
-            <div className="text-center max-w-md animate-fadeInUp">
-              <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-                <span className="text-white text-4xl">🎬</span>
+            <div className="py-8">
+              <div className="max-w-6xl mx-auto">
+                <VideoPlayer
+                  src={videoUrl}
+                  onOutputChanged={handleTrimmedOutput}
+                  onDownload={downloadVideo}
+                  onResetTrim={handleResetTrimState}
+                />
               </div>
-              <h2 className="text-2xl font-bold text-slate-800 mb-3">Create Amazing Videos</h2>
-              <p className="text-slate-600 leading-relaxed">
-                Generate stunning videos from text prompts using Google's Veo 3 AI model. 
-                Upload images or generate them with Imagen 4 for even more creative possibilities.
-              </p>
             </div>
-          ))}
-        {videoUrl && (
-          <div className="w-full max-w-4xl">
-            <VideoPlayer
-              src={videoUrl}
-              onOutputChanged={handleTrimmedOutput}
-              onDownload={downloadVideo}
-              onResetTrim={handleResetTrimState}
-            />
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </main>
 
       <Composer
         prompt={prompt}
