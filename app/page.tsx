@@ -42,9 +42,21 @@ const VeoStudio: React.FC = () => {
   const [showImageTools, setShowImageTools] = useState(false);
 
   const canStart = useMemo(() => {
-    if (!prompt.trim()) return false;
-    if (showImageTools && !(imageFile || generatedImage)) return false;
-    return true;
+    const hasPrompt = !!prompt.trim();
+    const hasImage = !!(imageFile || generatedImage);
+    const needsImage = showImageTools;
+    const canStartResult = hasPrompt && (!needsImage || hasImage);
+    
+    console.log("canStart check:", {
+      hasPrompt,
+      hasImage,
+      needsImage,
+      canStartResult,
+      prompt: prompt.substring(0, 30) + "...",
+      showImageTools
+    });
+    
+    return canStartResult;
   }, [prompt, showImageTools, imageFile, generatedImage]);
 
   const resetAll = () => {
@@ -113,6 +125,14 @@ const VeoStudio: React.FC = () => {
     setIsGenerating(true);
     setVideoUrl(null);
 
+    console.log("Starting video generation with:", {
+      prompt: prompt.substring(0, 50) + "...",
+      model: selectedModel,
+      aspectRatio,
+      hasImage: !!(imageFile || generatedImage),
+      showImageTools
+    });
+
     const form = new FormData();
     form.append("prompt", prompt);
     form.append("model", selectedModel);
@@ -122,11 +142,13 @@ const VeoStudio: React.FC = () => {
     if (showImageTools) {
       if (imageFile) {
         form.append("imageFile", imageFile);
+        console.log("Using uploaded image file:", imageFile.name);
       } else if (generatedImage) {
         const [meta, b64] = generatedImage.split(",");
         const mime = meta?.split(";")?.[0]?.replace("data:", "") || "image/png";
         form.append("imageBase64", b64);
         form.append("imageMimeType", mime);
+        console.log("Using generated image");
       }
     }
 
@@ -135,10 +157,29 @@ const VeoStudio: React.FC = () => {
         method: "POST",
         body: form,
       });
+      
+      if (!resp.ok) {
+        const errorData = await resp.json();
+        console.error("Video generation failed:", errorData);
+        alert(`Video generation failed: ${errorData.error || 'Unknown error'}`);
+        setIsGenerating(false);
+        return;
+      }
+      
       const json = await resp.json();
-      setOperationName(json?.name || null);
+      console.log("Video generation response:", json);
+      
+      if (json?.name) {
+        setOperationName(json.name);
+        console.log("Video generation started successfully:", json.name);
+      } else {
+        console.error("No operation name in response:", json);
+        alert("No operation name received from server");
+        setIsGenerating(false);
+      }
     } catch (e) {
-      console.error(e);
+      console.error("Video generation error:", e);
+      alert(`Video generation failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
       setIsGenerating(false);
     }
   }, [

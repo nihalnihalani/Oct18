@@ -11,20 +11,17 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const prompt = (body?.prompt as string) || "";
-    const model = (body?.model as string) || "imagen-3.0-generate-001";
 
     if (!prompt) {
       return NextResponse.json({ error: "Missing prompt" }, { status: 400 });
     }
 
-    console.log("Generating image with model:", model, "prompt:", prompt);
+    console.log("Generating image with prompt:", prompt);
 
+    // Try the correct Imagen API call
     const resp = await ai.models.generateImages({
-      model,
+      model: "imagen-3.0-generate-001",
       prompt,
-      config: {
-        aspectRatio: "16:9",
-      },
     });
 
     console.log("Image generation response:", resp);

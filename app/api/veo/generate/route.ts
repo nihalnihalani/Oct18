@@ -29,6 +29,14 @@ export async function POST(req: Request) {
     const imageBase64 = (form.get("imageBase64") as string) || undefined;
     const imageMimeType = (form.get("imageMimeType") as string) || undefined;
 
+    console.log("Video generation request:", {
+      prompt: prompt.substring(0, 50) + "...",
+      model,
+      hasImage: !!(imageFile || imageBase64),
+      aspectRatio,
+      negativePrompt: !!negativePrompt
+    });
+
     if (!prompt) {
       return NextResponse.json({ error: "Missing prompt" }, { status: 400 });
     }
@@ -57,6 +65,7 @@ export async function POST(req: Request) {
     });
 
     const name = (operation as unknown as { name?: string }).name;
+    console.log("Video generation started:", name);
     return NextResponse.json({ name });
   } catch (error: unknown) {
     console.error("Error starting Veo generation:", error);
