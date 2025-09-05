@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { X, Play, Pause, Download, Trash2, Eye, Calendar, Clock, Image as ImageIcon, Video, PencilSquare } from "lucide-react";
+import { X, Play, Pause, Download, Trash2, Eye, Calendar, Clock, Image as ImageIcon, Video, Edit } from "lucide-react";
 import NextImage from "next/image";
 import EditVideoPage from "./EditVideoPage";
 
@@ -291,7 +291,7 @@ const VeoGallery: React.FC<VeoGalleryProps> = ({
                                 className="w-8 h-8 bg-purple-500/80 hover:bg-purple-600/80 rounded-full flex items-center justify-center text-white transition-all"
                                 title="Edit Video"
                               >
-                                <PencilSquare className="w-4 h-4" />
+                                <Edit className="w-4 h-4" />
                               </button>
                             )}
                             <button

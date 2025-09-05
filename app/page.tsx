@@ -487,7 +487,7 @@ const VeoStudio: React.FC = () => {
                 title="Product Gallery"
               >
                 <Images className="w-4 h-4" />
-                Gallery
+                Product Gallery
                 {galleryItems.length > 0 && (
                   <span className="px-2 py-0.5 bg-purple-500 text-white text-xs rounded-full">
                     {galleryItems.length}
