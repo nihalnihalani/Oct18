@@ -10,7 +10,8 @@ import React, {
 import { Clock, X, Images } from "lucide-react";
 import Composer from "@/components/ui/Composer";
 import VideoPlayer from "@/components/ui/VideoPlayer";
-import ProductGallery from "@/components/ui/ProductGallery";
+import VeoGallery from "@/components/ui/VeoGallery";
+import { MOCK_GALLERY_ITEMS } from "@/lib/mockGalleryItems";
 
 type VeoOperationName = string | null;
 
@@ -54,7 +55,14 @@ const VeoStudio: React.FC = () => {
   
   // Gallery state
   const [showGallery, setShowGallery] = useState(false);
-  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(() => {
+    // Initialize with mock items
+    return MOCK_GALLERY_ITEMS.map(item => ({
+      ...item,
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      createdAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000), // Random date within last week
+    }));
+  });
 
   const canStart = useMemo(() => {
     const hasPrompt = !!prompt.trim();
@@ -573,8 +581,8 @@ const VeoStudio: React.FC = () => {
         galleryItemCount={galleryItems.length}
       />
 
-      {/* Product Gallery */}
-      <ProductGallery
+      {/* Veo Gallery */}
+      <VeoGallery
         isOpen={showGallery}
         onClose={() => setShowGallery(false)}
         galleryItems={galleryItems}

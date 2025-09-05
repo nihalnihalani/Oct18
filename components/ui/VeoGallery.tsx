@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { X, Play, Pause, Download, Trash2, Eye, Calendar, Clock, Image as ImageIcon, Video } from "lucide-react";
+import { X, Play, Pause, Download, Trash2, Eye, Calendar, Clock, Image as ImageIcon, Video, PencilSquare } from "lucide-react";
 import NextImage from "next/image";
 
 interface GalleryItem {
@@ -14,7 +14,7 @@ interface GalleryItem {
   thumbnail?: string;
 }
 
-interface ProductGalleryProps {
+interface VeoGalleryProps {
   isOpen: boolean;
   onClose: () => void;
   galleryItems: GalleryItem[];
@@ -22,7 +22,38 @@ interface ProductGalleryProps {
   onDownloadItem: (item: GalleryItem) => void;
 }
 
-const ProductGallery: React.FC<ProductGalleryProps> = ({
+// Custom icons from veo-3-gallery
+const PlayIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    {...props}>
+    <path
+      fillRule="evenodd"
+      d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.647c1.295.742 1.295 2.545 0 3.286L7.279 20.99c-1.25.717-2.779-.217-2.779-1.643V5.653Z"
+      clipRule="evenodd"
+    />
+  </svg>
+);
+
+const VideoCameraIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={1.5}
+    stroke="currentColor"
+    {...props}>
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9A2.25 2.25 0 0 0 13.5 5.25h-9a2.25 2.25 0 0 0-2.25 2.25v9A2.25 2.25 0 0 0 4.5 18.75Z"
+    />
+  </svg>
+);
+
+const VeoGallery: React.FC<VeoGalleryProps> = ({
   isOpen,
   onClose,
   galleryItems,
@@ -83,17 +114,17 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm">
       <div className="h-full flex flex-col">
-        {/* Header */}
+        {/* Header - Inspired by veo-3-gallery */}
         <div className="flex items-center justify-between p-6 border-b border-gray-800 bg-gray-900/95 backdrop-blur-md">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-              <span className="text-white text-lg">🎨</span>
+            <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+              <VideoCameraIcon className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Product Gallery
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">
+                Veo Gallery
               </h2>
               <p className="text-gray-400 text-sm">
                 {galleryItems.length} {galleryItems.length === 1 ? 'item' : 'items'} in your collection
@@ -163,7 +194,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({
             <div className="h-full flex items-center justify-center">
               <div className="text-center">
                 <div className="w-24 h-24 mx-auto mb-6 bg-gray-800 rounded-3xl flex items-center justify-center">
-                  <span className="text-4xl">📁</span>
+                  <VideoCameraIcon className="w-12 h-12 text-gray-400" />
                 </div>
                 <h3 className="text-xl font-semibold text-white mb-2">No items yet</h3>
                 <p className="text-gray-400 mb-6">
@@ -180,50 +211,40 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({
           ) : (
             <div className="h-full overflow-y-auto p-6">
               {viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                   {filteredItems.map((item) => (
                     <div
                       key={item.id}
-                      className="group bg-gray-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-gray-700 hover:border-purple-500 transition-all hover:shadow-xl hover:shadow-purple-500/20"
+                      className="group w-full text-left bg-gray-800/50 rounded-lg overflow-hidden shadow-lg hover:shadow-gray-500/30 transform transition-all duration-300 hover:-translate-y-2 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"
+                      onClick={() => setSelectedItem(item)}
                     >
-                      <div className="relative aspect-video bg-gray-900">
+                      <div className="relative">
                         {item.type === 'image' ? (
                           <NextImage
                             src={item.src}
                             alt={item.prompt}
-                            fill
-                            className="object-cover"
+                            width={300}
+                            height={200}
+                            className="w-full h-48 object-cover pointer-events-none"
                           />
                         ) : (
                           <video
                             ref={(el) => (videoRefs.current[item.id] = el)}
                             src={item.src}
-                            className="w-full h-full object-cover"
+                            className="w-full h-48 object-cover pointer-events-none"
                             muted
-                            loop
+                            playsInline
                             preload="metadata"
+                            aria-hidden="true"
                           />
                         )}
                         
-                        {/* Overlay */}
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            {item.type === 'video' && (
-                              <button
-                                onClick={() => handleVideoPlay(item)}
-                                className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all"
-                              >
-                                <Play className="w-6 h-6 text-white ml-1" />
-                              </button>
-                            )}
-                            <button
-                              onClick={() => setSelectedItem(item)}
-                              className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all ml-2"
-                            >
-                              <Eye className="w-6 h-6 text-white" />
-                            </button>
+                        {/* Play overlay for videos */}
+                        {item.type === 'video' && (
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <PlayIcon className="w-16 h-16 text-white opacity-80 drop-shadow-lg group-hover:opacity-100 transform group-hover:scale-110 transition-transform" />
                           </div>
-                        </div>
+                        )}
 
                         {/* Type Badge */}
                         <div className="absolute top-3 left-3">
@@ -239,31 +260,41 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({
                             )}
                           </div>
                         </div>
-                      </div>
 
+                        {/* Action buttons overlay */}
+                        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownload(item);
+                              }}
+                              className="w-8 h-8 bg-gray-700/80 hover:bg-gray-600/80 rounded-full flex items-center justify-center text-white transition-all"
+                              title="Download"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(item);
+                              }}
+                              className="w-8 h-8 bg-red-500/80 hover:bg-red-600/80 rounded-full flex items-center justify-center text-white transition-all"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      
                       <div className="p-4">
-                        <p className="text-white text-sm font-medium mb-2 line-clamp-2">
+                        <h3 className="text-base font-semibold text-gray-200 truncate mb-2" title={item.prompt}>
                           {item.prompt}
-                        </p>
+                        </h3>
                         <div className="flex items-center justify-between text-xs text-gray-400">
                           <span>{item.model}</span>
                           <span>{formatDate(item.createdAt)}</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-2 mt-3">
-                          <button
-                            onClick={() => handleDownload(item)}
-                            className="flex-1 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white text-sm font-medium transition-all flex items-center justify-center gap-1"
-                          >
-                            <Download className="w-4 h-4" />
-                            Download
-                          </button>
-                          <button
-                            onClick={() => handleDelete(item)}
-                            className="px-3 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-red-400 hover:text-red-300 transition-all"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
                         </div>
                       </div>
                     </div>
@@ -361,62 +392,68 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({
         </div>
       </div>
 
-      {/* Modal for viewing individual items */}
+      {/* Modal for viewing individual items - Inspired by veo-3-gallery VideoPlayer */}
       {selectedItem && (
-        <div className="fixed inset-0 z-60 bg-black/90 backdrop-blur-sm flex items-center justify-center p-6">
-          <div className="max-w-4xl max-h-full bg-gray-900 rounded-3xl overflow-hidden border border-gray-700">
-            <div className="flex items-center justify-between p-6 border-b border-gray-800">
-              <div>
-                <h3 className="text-xl font-semibold text-white mb-1">
-                  {selectedItem.prompt}
-                </h3>
-                <div className="flex items-center gap-4 text-sm text-gray-400">
-                  <span className="flex items-center gap-1">
-                    {selectedItem.type === 'image' ? (
-                      <><ImageIcon className="w-4 h-4" />Image</>
-                    ) : (
-                      <><Video className="w-4 h-4" />Video</>
-                    )}
-                  </span>
-                  <span>{selectedItem.model}</span>
-                  <span>{formatDate(selectedItem.createdAt)}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleDownload(selectedItem)}
-                  className="px-4 py-2 bg-purple-500 hover:bg-purple-600 rounded-xl text-white font-medium transition-all flex items-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  Download
-                </button>
-                <button
-                  onClick={() => setSelectedItem(null)}
-                  className="w-10 h-10 bg-gray-700 hover:bg-gray-600 rounded-xl flex items-center justify-center text-gray-300 hover:text-white transition-all"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-6">
-              <div className="relative bg-gray-800 rounded-2xl overflow-hidden">
+        <div className="fixed inset-0 bg-black/90 z-60 flex items-center justify-center animate-fade-in">
+          <div className="bg-gray-800 rounded-lg shadow-2xl w-full max-w-4xl relative overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex-shrink-0 p-2 sm:p-4">
+              <button
+                onClick={() => setSelectedItem(null)}
+                className="absolute top-2 right-2 text-white/70 hover:text-white z-10 p-2 rounded-full bg-black/20 hover:bg-black/40 transition-colors"
+                aria-label="Close video player"
+              >
+                <X className="w-6 h-6 sm:w-8 sm:h-8" />
+              </button>
+              <div className="aspect-w-16 aspect-h-9 bg-black rounded-md overflow-hidden">
                 {selectedItem.type === 'image' ? (
                   <NextImage
                     src={selectedItem.src}
                     alt={selectedItem.prompt}
                     width={800}
                     height={600}
-                    className="w-full h-auto"
+                    className="w-full h-full object-contain"
                   />
                 ) : (
                   <video
+                    key={selectedItem.id}
+                    className="w-full h-full"
                     src={selectedItem.src}
                     controls
-                    className="w-full h-auto"
                     autoPlay
+                    loop
+                    aria-label={selectedItem.prompt}
                   />
                 )}
+              </div>
+            </div>
+            <div className="flex-1 p-4 pt-2 overflow-y-auto">
+              <div className="flex justify-between items-start gap-4">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-white mb-2">
+                    {selectedItem.prompt}
+                  </h3>
+                  <div className="flex items-center gap-4 text-sm text-gray-400 mb-2">
+                    <span className="flex items-center gap-1">
+                      {selectedItem.type === 'image' ? (
+                        <><ImageIcon className="w-4 h-4" />Image</>
+                      ) : (
+                        <><Video className="w-4 h-4" />Video</>
+                      )}
+                    </span>
+                    <span>{selectedItem.model}</span>
+                    <span>{formatDate(selectedItem.createdAt)}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleDownload(selectedItem)}
+                    className="flex-shrink-0 flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-lg transition-colors text-sm"
+                    aria-label="Download item"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span className="hidden sm:inline">Download</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -426,4 +463,4 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({
   );
 };
 
-export default ProductGallery;
+export default VeoGallery;
