@@ -7,11 +7,22 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Clock, X } from "lucide-react";
+import { Clock, X, Images } from "lucide-react";
 import Composer from "@/components/ui/Composer";
 import VideoPlayer from "@/components/ui/VideoPlayer";
+import ProductGallery from "@/components/ui/ProductGallery";
 
 type VeoOperationName = string | null;
+
+interface GalleryItem {
+  id: string;
+  type: 'image' | 'video';
+  src: string;
+  prompt: string;
+  model: string;
+  createdAt: Date;
+  thumbnail?: string;
+}
 
 const POLL_INTERVAL_MS = 5000;
 
@@ -40,6 +51,10 @@ const VeoStudio: React.FC = () => {
   const originalVideoUrlRef = useRef<string | null>(null);
 
   const [showImageTools, setShowImageTools] = useState(false);
+  
+  // Gallery state
+  const [showGallery, setShowGallery] = useState(false);
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
 
   const canStart = useMemo(() => {
     const hasPrompt = !!prompt.trim();
@@ -99,6 +114,29 @@ const VeoStudio: React.FC = () => {
     setGeneratedImage(null);
   };
 
+  // Gallery functions
+  const addToGallery = (item: Omit<GalleryItem, 'id' | 'createdAt'>) => {
+    const newItem: GalleryItem = {
+      ...item,
+      id: Date.now().toString(),
+      createdAt: new Date(),
+    };
+    setGalleryItems(prev => [newItem, ...prev]);
+  };
+
+  const deleteFromGallery = (id: string) => {
+    setGalleryItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  const downloadFromGallery = (item: GalleryItem) => {
+    const link = document.createElement('a');
+    link.href = item.src;
+    link.download = `veo3_${item.type}_${item.id}.${item.type === 'image' ? 'png' : 'mp4'}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Imagen helper
   const generateWithImagen = useCallback(async () => {
     console.log("generateWithImagen called with prompt:", imagePrompt);
@@ -124,15 +162,24 @@ const VeoStudio: React.FC = () => {
       const json = await resp.json();
       console.log("Image generation response:", json);
       
-      if (json?.image?.imageBytes) {
-        const dataUrl = `data:${json.image.mimeType};base64,${json.image.imageBytes}`;
-        setGeneratedImage(dataUrl);
-        console.log("Image generated successfully");
-        alert("Image generated successfully!");
-      } else {
-        console.error("No image data in response:", json);
-        alert("No image data received from server");
-      }
+                if (json?.image?.imageBytes) {
+            const dataUrl = `data:${json.image.mimeType};base64,${json.image.imageBytes}`;
+            setGeneratedImage(dataUrl);
+            
+            // Add to gallery
+            addToGallery({
+              type: 'image',
+              src: dataUrl,
+              prompt: imagePrompt,
+              model: 'gemini-2.5-flash-image-preview',
+            });
+            
+            console.log("Image generated successfully");
+            alert("Image generated successfully!");
+          } else {
+            console.error("No image data in response:", json);
+            alert("No image data received from server");
+          }
     } catch (e) {
       console.error("Image generation error:", e);
       alert(`Image generation failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
@@ -279,6 +326,15 @@ const VeoStudio: React.FC = () => {
             console.log("Created video URL:", url);
             setVideoUrl(url);
             originalVideoUrlRef.current = url;
+            
+            // Add to gallery
+            addToGallery({
+              type: 'video',
+              src: url,
+              prompt: prompt,
+              model: selectedModel,
+            });
+            
             setIsDownloading(false);
           } else {
             console.error("No file URI found in response. Full response structure:", fresh);
@@ -377,6 +433,20 @@ const VeoStudio: React.FC = () => {
             </div>
             
             <div className="hidden md:flex items-center space-x-6">
+              <button
+                onClick={() => setShowGallery(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 hover:text-white transition-all backdrop-blur-sm border border-gray-700 hover:border-purple-500"
+                title="Product Gallery"
+              >
+                <Images className="w-4 h-4" />
+                Gallery
+                {galleryItems.length > 0 && (
+                  <span className="px-2 py-0.5 bg-purple-500 text-white text-xs rounded-full">
+                    {galleryItems.length}
+                  </span>
+                )}
+              </button>
+              
               <div className="flex items-center space-x-2 text-sm text-gray-400">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                 <span>API Connected</span>
@@ -466,18 +536,18 @@ const VeoStudio: React.FC = () => {
                     <X className="w-4 h-4" />
                     Close Video
                   </button>
-                </div>
-                
-                <VideoPlayer
-                  src={videoUrl}
-                  onOutputChanged={handleTrimmedOutput}
-                  onDownload={downloadVideo}
-                  onResetTrim={handleResetTrimState}
-                />
-              </div>
             </div>
-          )}
-        </div>
+                
+            <VideoPlayer
+              src={videoUrl}
+              onOutputChanged={handleTrimmedOutput}
+              onDownload={downloadVideo}
+              onResetTrim={handleResetTrimState}
+            />
+              </div>
+          </div>
+        )}
+      </div>
       </main>
 
       <Composer
@@ -499,6 +569,15 @@ const VeoStudio: React.FC = () => {
         generatedImage={generatedImage}
         resetAll={resetAll}
         closeGeneratedImage={closeGeneratedImage}
+      />
+
+      {/* Product Gallery */}
+      <ProductGallery
+        isOpen={showGallery}
+        onClose={() => setShowGallery(false)}
+        galleryItems={galleryItems}
+        onDeleteItem={deleteFromGallery}
+        onDownloadItem={downloadFromGallery}
       />
     </div>
   );
