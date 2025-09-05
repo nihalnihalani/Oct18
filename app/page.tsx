@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Clock } from "lucide-react";
+import { Clock, X } from "lucide-react";
 import Composer from "@/components/ui/Composer";
 import VideoPlayer from "@/components/ui/VideoPlayer";
 
@@ -79,6 +79,20 @@ const VeoStudio: React.FC = () => {
       trimmedUrlRef.current = null;
     }
     trimmedBlobRef.current = null;
+  };
+
+  const closeVideo = () => {
+    setVideoUrl(null);
+    if (videoBlobRef.current) {
+      URL.revokeObjectURL(URL.createObjectURL(videoBlobRef.current));
+      videoBlobRef.current = null;
+    }
+    if (trimmedUrlRef.current) {
+      URL.revokeObjectURL(trimmedUrlRef.current);
+      trimmedUrlRef.current = null;
+    }
+    trimmedBlobRef.current = null;
+    originalVideoUrlRef.current = null;
   };
 
   // Imagen helper
@@ -438,6 +452,18 @@ const VeoStudio: React.FC = () => {
           ) : (
             <div className="py-8">
               <div className="max-w-6xl mx-auto">
+                {/* Close Button */}
+                <div className="flex justify-end mb-4">
+                  <button
+                    onClick={closeVideo}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800/90 hover:bg-gray-700/90 text-gray-300 hover:text-white transition-all backdrop-blur-sm border border-gray-700 hover:border-gray-600 shadow-lg hover:shadow-xl transform hover:scale-105"
+                    title="Close Video"
+                  >
+                    <X className="w-4 h-4" />
+                    Close Video
+                  </button>
+                </div>
+                
                 <VideoPlayer
                   src={videoUrl}
                   onOutputChanged={handleTrimmedOutput}
