@@ -1,83 +1,185 @@
-# Veo 3 Gemini API Quickstart
+# 🎬 Veo 3 Studio - AI Video Generation Platform
 
-[Veo 3](https://ai.google.dev/gemini-api/docs/video) is Google's state-of-the-art video generation model available in the Gemini API. This repository is a quickstart that demonstrates how to build a simple UI to generate videos with Veo 3, play them, and download the results. It also includes an image + text to video generation using the [Imagen 4](https://ai.google.dev/gemini-api/docs/imagen) model.
+A comprehensive AI-powered video generation platform built with Next.js, React, and Google's Gemini API featuring Veo 3 video generation and advanced voice integration.
 
-![Example](./public/example.png)
+## ✨ Features
 
-> [!NOTE]  
-> If you want a full studio, consider [Google's Flow](https://labs.google/fx/tools/flow) (a professional environment for Veo/Imagen). Use this repo as a lightweight quickstart to learn how to build your own UI that generates videos with Veo 3 via the Gemini API.
+### 🎥 **Video Generation**
+- **Veo 3 Integration**: Generate high-quality videos using Google's latest Veo 3 model
+- **Multiple Models**: Support for Veo 3, Veo 3 Fast, and Veo 2 models
+- **Aspect Ratio Control**: Customize video dimensions (16:9, 9:16, 1:1)
+- **Image-to-Video**: Upload images or generate with Imagen 3.0 for video creation
 
-(This is not an official Google product.)
+### 🎤 **Voice Integration**
+- **Speech-to-Text**: Real-time voice recording with Gemini-powered transcription
+- **Voice Editing**: Add voice prompts to enhance video descriptions
+- **Seamless Workflow**: Voice input automatically appends to text prompts
 
-## Features
+### 🖼️ **Image Generation**
+- **Imagen 3.0**: Generate images using Google's Imagen model
+- **Image Enhancement**: Use generated images as starting points for videos
+- **Multiple Formats**: Support for PNG, JPG, WEBP formats
 
--   Generate videos from text prompts using the Veo-3 model.
--   Generate videos from images + text prompts using the Imagen 4.0 model or upload a starting image.
--   Play and download generated videos.
--   Cut videos directly in the browser to a specific time range.
+### 🎨 **Modern UI/UX**
+- **Dark Theme**: Sleek, modern dark interface
+- **Responsive Design**: Works perfectly on desktop and mobile
+- **Glassmorphism Effects**: Beautiful backdrop blur and transparency
+- **Smooth Animations**: Custom CSS animations and transitions
+- **Product Gallery**: Comprehensive gallery with filtering and sorting
 
-## Getting Started: Development and Local Testing
+### 🔧 **Advanced Features**
+- **Video Trimming**: In-browser video editing and trimming
+- **Download Support**: Download generated videos and images
+- **Real-time Polling**: Live status updates during video generation
+- **Error Handling**: Comprehensive error management and user feedback
 
-Follow these steps to get the application running locally for development and testing.
+## 🚀 Quick Start
 
-**1. Prerequisites:**
+### Prerequisites
+- Node.js 18+ and npm
+- Google Gemini API key (Paid tier required for Veo 3)
 
--   Node.js and npm (or yarn/pnpm)
--   **`GEMINI_API_KEY`**: The application requires a [GEMINI API key](https://aistudio.google.com/app/apikey). Either create a `.env` file in the project root and add your API key: `GEMINI_API_KEY="YOUR_API_KEY"` or set the environment variable in your system.
+### Installation
 
-> [!WARNING]  
-> Google Veo 3 and Imagen 4 are both part of the Gemini API Paid tier. You will need to be on the paid tier to use these models.
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/nihalnihalani/SEC-hacakthon.git
+   cd SEC-hacakthon
+   ```
 
-**2. Install Dependencies:**
-
+2. **Install dependencies**
 ```bash
 npm install
 ```
 
-**3. Run Development Server:**
+3. **Set up environment variables**
+   ```bash
+   # Create .env.local file
+   echo "GEMINI_API_KEY=your_api_key_here" > .env.local
+   ```
 
+4. **Run the development server**
 ```bash
 npm run dev
 ```
 
-Open your browser and navigate to `http://localhost:3000` to see the application.
+5. **Open your browser**
+   Navigate to `http://localhost:3000`
 
-## Project Structure
+## 🏗️ Project Structure
 
-The project is a standard Next.js application with the following key directories:
+```
+├── app/                          # Next.js 15 App Router
+│   ├── api/                      # API routes
+│   │   ├── veo/                  # Veo 3 video generation
+│   │   ├── imagen/               # Imagen image generation
+│   │   └── voice/                # Voice transcription
+│   ├── globals.css               # Global styles
+│   ├── layout.tsx                # Root layout
+│   └── page.tsx                  # Main application
+├── components/                    # React components
+│   └── ui/                       # UI components
+│       ├── Composer.tsx          # Main input interface
+│       ├── VideoPlayer.tsx       # Video player with controls
+│       ├── VeoGallery.tsx        # Product gallery
+│       ├── EditVideoPage.tsx     # Video editing with voice
+│       └── ModelSelector.tsx     # Model selection
+├── lib/                          # Utility functions
+│   ├── mockGalleryItems.ts       # Sample gallery data
+│   └── utils.ts                  # Helper functions
+├── public/                       # Static assets
+└── veo-3-gallery/               # Reference gallery implementation
+```
 
--   `app/`: Contains the main application logic, including the user interface and API routes.
-    -   `api/`: API routes for generating videos and images, and checking operation status.
--   `components/`: Reusable React components used throughout the application.
--   `lib/`: Utility functions and schema definitions.
--   `public/`: Static assets.
+## 🔌 API Endpoints
 
-## Official Docs and Resources
+### Video Generation
+- `POST /api/veo/generate` - Start video generation
+- `POST /api/veo/operation` - Check generation status
+- `POST /api/veo/download` - Download generated video
+- `POST /api/veo/regenerate` - Regenerate video with new prompt
 
--   Gemini API docs: `https://ai.google.dev/gemini-api/docs`
--   Veo 3 Guide: `https://ai.google.dev/gemini-api/docs/video?example=dialogue`
--   Imagen 4 Guide: `https://ai.google.dev/gemini-api/docs/imagen`
+### Image Generation
+- `POST /api/imagen/generate` - Generate images with Imagen 3.0
 
-## How it Works
+### Voice Integration
+- `POST /api/voice/transcribe` - Transcribe audio to text using Gemini
 
-The application uses the following API routes to interact with the Google models:
+## 🎯 Usage Examples
 
--   `app/api/veo/generate/route.ts`:  Handles video generation requests. It takes a text prompt as input and initiates a video generation operation with the Veo-3 model.
--   `app/api/veo/operation/route.ts`: Checks the status of a video generation operation.
--   `app/api/veo/download/route.ts`:  Downloads the generated video.
--   `app/api/imagen/generate/route.ts`: Handles image generation requests with the Imagen model.
+### Generate a Video
+1. Enter a detailed prompt describing your video
+2. Select your preferred model (Veo 3, Veo 3 Fast, or Veo 2)
+3. Choose aspect ratio if needed
+4. Click "Generate" and wait for completion
+5. Play, download, or edit the generated video
 
-## Technologies Used
+### Use Voice Input
+1. Click "Edit" on any video in the gallery
+2. Click the "Voice" button to start recording
+3. Speak your additional prompt
+4. Click "Stop" to transcribe automatically
+5. The transcribed text will be appended to your prompt
+6. Generate a new video with the enhanced prompt
 
--   [Next.js](https://nextjs.org/) - React framework for building the user interface.
--   [React](https://reactjs.org/) - JavaScript library for building user interfaces.
--   [Tailwind CSS](https://tailwindcss.com/) - For styling.
--   [Gemini API](https://ai.google.dev/gemini-api/docs) with Veo 3 - For video generation; Imagen - For image generation.
+### Create Image-to-Video
+1. Click the "Image" button in the composer
+2. Either upload an image or generate one with Imagen
+3. Add a text prompt describing the video
+4. Generate your video using the image as a starting point
 
-## Questions and feature requests
+## 🛠️ Technologies Used
 
--   **Want a feature?** Please open an issue describing the use case and proposed behavior.
+- **Frontend**: Next.js 15, React 19, TypeScript
+- **Styling**: Tailwind CSS 4 with custom animations
+- **AI Integration**: Google Gemini API (@google/genai)
+- **Video Processing**: MediaRecorder API, react-player
+- **Icons**: Lucide React
+- **Development**: ESLint, TypeScript
 
-## License
+## 📱 Browser Support
 
-This project is licensed under the Apache License 2.0.
+- Chrome 90+
+- Firefox 88+
+- Safari 14+
+- Edge 90+
+
+## 🔐 Security & Privacy
+
+- API keys are stored securely in environment variables
+- No user data is stored permanently
+- All API calls are made server-side for security
+- Voice recordings are processed locally and not stored
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Google Gemini API team for Veo 3 and Imagen models
+- Next.js team for the amazing framework
+- Tailwind CSS for the utility-first CSS framework
+- The open-source community for inspiration and tools
+
+## 📞 Support
+
+If you encounter any issues or have questions:
+
+1. Check the [Issues](https://github.com/nihalnihalani/SEC-hacakthon/issues) page
+2. Create a new issue with detailed information
+3. Include error messages and steps to reproduce
+
+---
+
+**Built with ❤️ for the SEC Hackathon**
+
+*This project demonstrates advanced AI integration, modern web development practices, and innovative user experience design.*
