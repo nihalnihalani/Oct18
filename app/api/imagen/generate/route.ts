@@ -18,30 +18,64 @@ export async function POST(req: Request) {
 
     console.log("Generating image with prompt:", prompt);
 
-    // Try the correct Imagen API call
-    const resp = await ai.models.generateImages({
-      model: "imagen-3.0-generate-001",
-      prompt,
-    });
+    // Try different approaches for image generation
+    try {
+      // First try: Direct model call
+      const resp = await ai.models.generateImages({
+        model: "imagen-3.0-generate-001",
+        prompt,
+      });
 
-    console.log("Image generation response:", resp);
+      console.log("Image generation response:", resp);
 
-    const image = resp.generatedImages?.[0]?.image;
-    if (!image?.imageBytes) {
-      console.error("No image returned from API");
-      return NextResponse.json({ error: "No image returned" }, { status: 500 });
+      const image = resp.generatedImages?.[0]?.image;
+      if (!image?.imageBytes) {
+        console.error("No image returned from API");
+        return NextResponse.json({ error: "No image returned" }, { status: 500 });
+      }
+
+      return NextResponse.json({
+        image: {
+          imageBytes: image.imageBytes,
+          mimeType: image.mimeType || "image/png",
+        },
+      });
+    } catch (apiError) {
+      console.error("First API attempt failed:", apiError);
+      
+      // Second try: Different model
+      try {
+        const resp2 = await ai.models.generateImages({
+          model: "imagen-3.0-generate-001",
+          prompt,
+          config: {
+            aspectRatio: "16:9",
+          },
+        });
+
+        console.log("Second image generation response:", resp2);
+
+        const image = resp2.generatedImages?.[0]?.image;
+        if (!image?.imageBytes) {
+          console.error("No image returned from second API attempt");
+          return NextResponse.json({ error: "No image returned" }, { status: 500 });
+        }
+
+        return NextResponse.json({
+          image: {
+            imageBytes: image.imageBytes,
+            mimeType: image.mimeType || "image/png",
+          },
+        });
+      } catch (apiError2) {
+        console.error("Second API attempt failed:", apiError2);
+        throw apiError2;
+      }
     }
-
-    return NextResponse.json({
-      image: {
-        imageBytes: image.imageBytes,
-        mimeType: image.mimeType || "image/png",
-      },
-    });
   } catch (error) {
     console.error("Error generating image:", error);
     return NextResponse.json(
-      { error: "Failed to generate image" },
+      { error: `Failed to generate image: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     );
   }

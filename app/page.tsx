@@ -83,6 +83,7 @@ const VeoStudio: React.FC = () => {
 
   // Imagen helper
   const generateWithImagen = useCallback(async () => {
+    console.log("generateWithImagen called with prompt:", imagePrompt);
     setImagenBusy(true);
     setGeneratedImage(null);
     try {
@@ -92,6 +93,8 @@ const VeoStudio: React.FC = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: imagePrompt }),
       });
+      
+      console.log("Image generation response status:", resp.status);
       
       if (!resp.ok) {
         const errorData = await resp.json();
@@ -107,6 +110,7 @@ const VeoStudio: React.FC = () => {
         const dataUrl = `data:${json.image.mimeType};base64,${json.image.imageBytes}`;
         setGeneratedImage(dataUrl);
         console.log("Image generated successfully");
+        alert("Image generated successfully!");
       } else {
         console.error("No image data in response:", json);
         alert("No image data received from server");
