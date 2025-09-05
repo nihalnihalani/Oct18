@@ -11,11 +11,13 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const prompt = (body?.prompt as string) || "";
-    const model = (body?.model as string) || "imagen-4.0-fast-generate-001";
+    const model = (body?.model as string) || "imagen-3.0-generate-001";
 
     if (!prompt) {
       return NextResponse.json({ error: "Missing prompt" }, { status: 400 });
     }
+
+    console.log("Generating image with model:", model, "prompt:", prompt);
 
     const resp = await ai.models.generateImages({
       model,
@@ -25,8 +27,11 @@ export async function POST(req: Request) {
       },
     });
 
+    console.log("Image generation response:", resp);
+
     const image = resp.generatedImages?.[0]?.image;
     if (!image?.imageBytes) {
+      console.error("No image returned from API");
       return NextResponse.json({ error: "No image returned" }, { status: 500 });
     }
 

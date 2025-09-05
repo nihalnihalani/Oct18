@@ -74,18 +74,34 @@ const VeoStudio: React.FC = () => {
     setImagenBusy(true);
     setGeneratedImage(null);
     try {
+      console.log("Generating image with prompt:", imagePrompt);
       const resp = await fetch("/api/imagen/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: imagePrompt }),
       });
+      
+      if (!resp.ok) {
+        const errorData = await resp.json();
+        console.error("Image generation failed:", errorData);
+        alert(`Image generation failed: ${errorData.error || 'Unknown error'}`);
+        return;
+      }
+      
       const json = await resp.json();
+      console.log("Image generation response:", json);
+      
       if (json?.image?.imageBytes) {
         const dataUrl = `data:${json.image.mimeType};base64,${json.image.imageBytes}`;
         setGeneratedImage(dataUrl);
+        console.log("Image generated successfully");
+      } else {
+        console.error("No image data in response:", json);
+        alert("No image data received from server");
       }
     } catch (e) {
-      console.error(e);
+      console.error("Image generation error:", e);
+      alert(`Image generation failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
     } finally {
       setImagenBusy(false);
     }
