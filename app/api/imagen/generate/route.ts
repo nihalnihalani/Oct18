@@ -18,69 +18,39 @@ export async function POST(req: Request) {
 
     console.log("Generating image with prompt:", prompt);
 
-    // Try different models and approaches
-    const modelsToTry = [
-      "imagen-3.0-generate-001",
-      "imagen-3.0-fast-generate-001", 
-      "imagen-3.0-generate",
-      "imagen-3.0-fast-generate"
-    ];
-
-    for (const model of modelsToTry) {
-      try {
-        console.log(`Trying model: ${model}`);
-        
-        const resp = await ai.models.generateImages({
-          model,
-          prompt,
-        });
-
-        console.log(`Image generation response for ${model}:`, resp);
-
-        const image = resp.generatedImages?.[0]?.image;
-        if (image?.imageBytes) {
-          console.log(`Success with model: ${model}`);
-          return NextResponse.json({
-            image: {
-              imageBytes: image.imageBytes,
-              mimeType: image.mimeType || "image/png",
-            },
-          });
-        }
-      } catch (modelError) {
-        console.error(`Model ${model} failed:`, modelError);
-        continue; // Try next model
-      }
-    }
-
-    // If all models fail, try without specifying model
+    // Use the correct Gemini model for image generation
+    const model = 'gemini-2.5-flash-image-preview';
+    
     try {
-      console.log("Trying without specifying model");
+      console.log(`Using model: ${model}`);
+      
       const resp = await ai.models.generateImages({
+        model,
         prompt,
       });
 
-      console.log("Image generation response (no model):", resp);
+      console.log(`Image generation response for ${model}:`, resp);
 
       const image = resp.generatedImages?.[0]?.image;
       if (image?.imageBytes) {
-        console.log("Success without specifying model");
+        console.log(`Success with model: ${model}`);
         return NextResponse.json({
           image: {
             imageBytes: image.imageBytes,
             mimeType: image.mimeType || "image/png",
           },
         });
+      } else {
+        console.error("No image returned from API");
+        return NextResponse.json({ error: "No image returned" }, { status: 500 });
       }
-    } catch (noModelError) {
-      console.error("No model specified failed:", noModelError);
+    } catch (modelError) {
+      console.error(`Model ${model} failed:`, modelError);
+      return NextResponse.json(
+        { error: `Image generation failed: ${modelError instanceof Error ? modelError.message : 'Unknown error'}` },
+        { status: 500 }
+      );
     }
-
-    // All attempts failed
-    return NextResponse.json(
-      { error: "All image generation attempts failed. Please check your API key and model access." },
-      { status: 500 }
-    );
   } catch (error) {
     console.error("Error generating image:", error);
     return NextResponse.json(
