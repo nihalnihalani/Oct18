@@ -98,11 +98,20 @@ const Composer: React.FC<ComposerProps> = ({
       {showImageTools && (
         <div className="mb-4 rounded-3xl backdrop-blur-xl bg-gray-800/90 shadow-2xl border border-gray-700 p-6">
           <div className="space-y-4">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                <span className="text-white text-sm">🎨</span>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                  <span className="text-white text-sm">🎨</span>
+                </div>
+                <h3 className="text-lg font-semibold text-white">Image Enhancement</h3>
               </div>
-              <h3 className="text-lg font-semibold text-white">Image Enhancement</h3>
+              <button
+                onClick={() => setShowImageTools(false)}
+                className="w-8 h-8 bg-gray-700 hover:bg-gray-600 rounded-full flex items-center justify-center text-gray-300 hover:text-white transition-all transform hover:scale-110"
+                title="Close Image Enhancement"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
             
             <div
