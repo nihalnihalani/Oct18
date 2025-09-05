@@ -18,73 +18,74 @@ export async function POST(req: Request) {
 
     console.log("Generating image with prompt:", prompt);
 
-    // Check if generateImages method exists
-    console.log("Available methods on ai.models:", Object.getOwnPropertyNames(ai.models));
-    console.log("Available methods on ai:", Object.getOwnPropertyNames(ai));
-
-    // Try different approaches
-    try {
-      // First try: Check if generateImages exists
-      if (typeof ai.models.generateImages === 'function') {
-        console.log("generateImages method exists, trying...");
-        
-        const resp = await ai.models.generateImages({
-          prompt,
-        });
-
-        console.log("Image generation response:", resp);
-
-        const image = resp.generatedImages?.[0]?.image;
-        if (image?.imageBytes) {
-          console.log("Success with generateImages");
-          return NextResponse.json({
-            image: {
-              imageBytes: image.imageBytes,
-              mimeType: image.mimeType || "image/png",
-            },
-          });
-        }
-      } else {
-        console.log("generateImages method does not exist");
-      }
-    } catch (apiError) {
-      console.error("generateImages failed:", apiError);
-    }
-
-    // Try alternative approach - maybe it's a different method
-    try {
-      console.log("Trying alternative approach...");
-      
-      // Check if there's a different method for image generation
-      const resp = await ai.generateContent({
-        model: 'gemini-1.5-flash',
-        contents: [{
-          parts: [{
-            text: `Generate an image of: ${prompt}`
-          }]
-        }]
-      });
-
-      console.log("Alternative response:", resp);
-      
-      // This might not work for image generation, but let's see what we get
-      return NextResponse.json({
-        error: "Image generation not supported with current API method",
-        debug: "Tried alternative approach but image generation may not be available"
-      });
-      
-    } catch (altError) {
-      console.error("Alternative approach failed:", altError);
-    }
-
-    // All attempts failed
-    return NextResponse.json(
-      { 
-        error: "Image generation is not available with the current Google GenAI package. The generateImages method may not be supported or the models may not support image generation.",
-        suggestion: "Consider using a different image generation service or check if image generation is available in your region."
+    const config = {
+      responseModalities: [
+        'IMAGE',
+        'TEXT',
+      ],
+    };
+    const model = 'gemini-2.5-flash-image-preview';
+    const contents = [
+      {
+        role: 'user',
+        parts: [
+          {
+            text: prompt,
+          },
+        ],
       },
-      { status: 500 }
-    );
+    ];
+
+    console.log("Using model:", model);
+    console.log("Config:", config);
+
+    const response = await ai.models.generateContentStream({
+      model,
+      config,
+      contents,
+    });
+
+    let imageData: { data: string; mimeType: string } | null = null;
+    let textResponse = "";
+
+    for await (const chunk of response) {
+      if (!chunk.candidates || !chunk.candidates[0].content || !chunk.candidates[0].content.parts) {
+        continue;
+      }
+      
+      if (chunk.candidates?.[0]?.content?.parts?.[0]?.inlineData) {
+        const inlineData = chunk.candidates[0].content.parts[0].inlineData;
+        imageData = {
+          data: inlineData.data || '',
+          mimeType: inlineData.mimeType || 'image/png'
+        };
+        console.log("Received image data:", imageData.mimeType);
+      } else if (chunk.candidates?.[0]?.content?.parts?.[0]?.text) {
+        textResponse += chunk.candidates[0].content.parts[0].text;
+        console.log("Received text:", chunk.candidates[0].content.parts[0].text);
+      }
+    }
+
+    if (imageData) {
+      console.log("Successfully generated image");
+      return NextResponse.json({
+        image: {
+          imageBytes: imageData.data,
+          mimeType: imageData.mimeType,
+        },
+        text: textResponse || undefined,
+      });
+    } else {
+      console.error("No image data received");
+      return NextResponse.json(
+        { 
+          error: "No image data received from the API",
+          text: textResponse || undefined,
+          debug: "The API responded but didn't include image data"
+        },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error("Error generating image:", error);
     return NextResponse.json(
