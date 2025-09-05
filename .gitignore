@@ -43,7 +43,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
 # IDE and editor files
 .vscode/
 .idea/
@@ -115,3 +114,8 @@ dist
 # Temporary folders
 tmp/
 temp/
+
+# Video files
+*.mp4
+Videos 2/
+public/Videos 2/
