@@ -3,6 +3,7 @@
 import React, { useState, useRef } from "react";
 import { X, Play, Pause, Download, Trash2, Eye, Calendar, Clock, Image as ImageIcon, Video, PencilSquare } from "lucide-react";
 import NextImage from "next/image";
+import EditVideoPage from "./EditVideoPage";
 
 interface GalleryItem {
   id: string;
@@ -20,6 +21,7 @@ interface VeoGalleryProps {
   galleryItems: GalleryItem[];
   onDeleteItem: (id: string) => void;
   onDownloadItem: (item: GalleryItem) => void;
+  onEditItem: (item: GalleryItem) => void;
 }
 
 // Custom icons from veo-3-gallery
@@ -59,8 +61,10 @@ const VeoGallery: React.FC<VeoGalleryProps> = ({
   galleryItems,
   onDeleteItem,
   onDownloadItem,
+  onEditItem,
 }) => {
   const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
+  const [editingItem, setEditingItem] = useState<GalleryItem | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filterType, setFilterType] = useState<'all' | 'image' | 'video'>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'type'>('newest');
@@ -111,6 +115,20 @@ const VeoGallery: React.FC<VeoGalleryProps> = ({
     if (confirm(`Are you sure you want to delete this ${item.type}?`)) {
       onDeleteItem(item.id);
     }
+  };
+
+  const handleEdit = (item: GalleryItem) => {
+    setEditingItem(item);
+    setSelectedItem(null); // Close modal if open
+  };
+
+  const handleSaveEdit = (updatedVideo: GalleryItem) => {
+    onEditItem(updatedVideo);
+    setEditingItem(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingItem(null);
   };
 
   return (
@@ -264,6 +282,18 @@ const VeoGallery: React.FC<VeoGalleryProps> = ({
                         {/* Action buttons overlay */}
                         <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
                           <div className="flex gap-2">
+                            {item.type === 'video' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEdit(item);
+                                }}
+                                className="w-8 h-8 bg-purple-500/80 hover:bg-purple-600/80 rounded-full flex items-center justify-center text-white transition-all"
+                                title="Edit Video"
+                              >
+                                <PencilSquare className="w-4 h-4" />
+                              </button>
+                            )}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -363,6 +393,15 @@ const VeoGallery: React.FC<VeoGalleryProps> = ({
                               <Play className="w-4 h-4 ml-0.5" />
                             </button>
                           )}
+                          {item.type === 'video' && (
+                            <button
+                              onClick={() => handleEdit(item)}
+                              className="w-10 h-10 bg-purple-500/20 hover:bg-purple-500/30 rounded-xl flex items-center justify-center text-purple-400 hover:text-purple-300 transition-all"
+                              title="Edit Video"
+                            >
+                              <PencilSquare className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => setSelectedItem(item)}
                             className="w-10 h-10 bg-gray-700 hover:bg-gray-600 rounded-xl flex items-center justify-center text-gray-300 hover:text-white transition-all"
@@ -445,6 +484,16 @@ const VeoGallery: React.FC<VeoGalleryProps> = ({
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {selectedItem.type === 'video' && (
+                    <button
+                      onClick={() => handleEdit(selectedItem)}
+                      className="flex-shrink-0 flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-lg transition-colors text-sm"
+                      aria-label="Edit video"
+                    >
+                      <PencilSquare className="w-4 h-4" />
+                      <span className="hidden sm:inline">Edit</span>
+                    </button>
+                  )}
                   <button
                     onClick={() => handleDownload(selectedItem)}
                     className="flex-shrink-0 flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-lg transition-colors text-sm"
@@ -458,6 +507,15 @@ const VeoGallery: React.FC<VeoGalleryProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Edit Video Page */}
+      {editingItem && (
+        <EditVideoPage
+          video={editingItem}
+          onSave={handleSaveEdit}
+          onCancel={handleCancelEdit}
+        />
       )}
     </div>
   );

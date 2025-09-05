@@ -145,6 +145,46 @@ const VeoStudio: React.FC = () => {
     document.body.removeChild(link);
   };
 
+  const editFromGallery = async (item: GalleryItem) => {
+    console.log("Editing video with new prompt:", item.prompt);
+    
+    try {
+      // Start video regeneration
+      const resp = await fetch("/api/veo/regenerate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          prompt: item.prompt,
+          model: item.model 
+        }),
+      });
+      
+      if (!resp.ok) {
+        const errorData = await resp.json();
+        console.error("Video regeneration failed:", errorData);
+        alert(`Video regeneration failed: ${errorData.error || 'Unknown error'}`);
+        return;
+      }
+      
+      const json = await resp.json();
+      console.log("Video regeneration response:", json);
+      
+      if (json?.name) {
+        // Set up polling for the new video
+        setOperationName(json.name);
+        setIsGenerating(true);
+        setVideoUrl(null);
+        console.log("Video regeneration started successfully:", json.name);
+      } else {
+        console.error("No operation name in response:", json);
+        alert("No operation name received from server");
+      }
+    } catch (e) {
+      console.error("Video regeneration error:", e);
+      alert(`Video regeneration failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    }
+  };
+
   // Imagen helper
   const generateWithImagen = useCallback(async () => {
     console.log("generateWithImagen called with prompt:", imagePrompt);
@@ -588,6 +628,7 @@ const VeoStudio: React.FC = () => {
         galleryItems={galleryItems}
         onDeleteItem={deleteFromGallery}
         onDownloadItem={downloadFromGallery}
+        onEditItem={editFromGallery}
       />
     </div>
   );
