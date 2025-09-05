@@ -399,7 +399,7 @@ const VeoGallery: React.FC<VeoGalleryProps> = ({
                               className="w-10 h-10 bg-purple-500/20 hover:bg-purple-500/30 rounded-xl flex items-center justify-center text-purple-400 hover:text-purple-300 transition-all"
                               title="Edit Video"
                             >
-                              <PencilSquare className="w-4 h-4" />
+                              <Edit className="w-4 h-4" />
                             </button>
                           )}
                           <button
@@ -490,7 +490,7 @@ const VeoGallery: React.FC<VeoGalleryProps> = ({
                       className="flex-shrink-0 flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-lg transition-colors text-sm"
                       aria-label="Edit video"
                     >
-                      <PencilSquare className="w-4 h-4" />
+                      <Edit className="w-4 h-4" />
                       <span className="hidden sm:inline">Edit</span>
                     </button>
                   )}
