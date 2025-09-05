@@ -7,10 +7,11 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Clock, X, Images } from "lucide-react";
+import { Clock, X, Images, Mic } from "lucide-react";
 import Composer from "@/components/ui/Composer";
 import VideoPlayer from "@/components/ui/VideoPlayer";
 import VeoGallery from "@/components/ui/VeoGallery";
+import VoiceSphere from "@/components/ui/VoiceSphere";
 import { MOCK_GALLERY_ITEMS } from "@/lib/mockGalleryItems";
 
 type VeoOperationName = string | null;
@@ -63,6 +64,10 @@ const VeoStudio: React.FC = () => {
       createdAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000), // Random date within last week
     }));
   });
+
+  // Voice Agent state
+  const [showVoiceAgent, setShowVoiceAgent] = useState(false);
+  const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
 
   const canStart = useMemo(() => {
     const hasPrompt = !!prompt.trim();
@@ -147,6 +152,7 @@ const VeoStudio: React.FC = () => {
 
   const editFromGallery = async (item: GalleryItem) => {
     console.log("Editing video with new prompt:", item.prompt);
+    setCurrentVideoId(item.id); // Set current video ID for voice agent context
     
     try {
       // Start video regeneration
@@ -182,6 +188,44 @@ const VeoStudio: React.FC = () => {
     } catch (e) {
       console.error("Video regeneration error:", e);
       alert(`Video regeneration failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    }
+  };
+
+  // Voice Agent functions
+  const handleVoiceGenerateVideo = async (voicePrompt: string) => {
+    console.log("Voice agent setting creative brief as prompt:", voicePrompt);
+    setPrompt(voicePrompt);
+    setShowImageTools(false);
+    setGeneratedImage(null);
+    setImageFile(null);
+    
+    // Just set the prompt, don't auto-generate
+    console.log("Creative brief has been set in the prompt field");
+  };
+
+  const handleVoiceGenerateImage = async (voicePrompt: string) => {
+    console.log("Voice agent generating image with prompt:", voicePrompt);
+    setImagePrompt(voicePrompt);
+    setShowImageTools(true);
+    
+    // Generate image
+    await generateWithImagen();
+  };
+
+  const handleVoiceEditVideo = async (voicePrompt: string, videoId?: string) => {
+    console.log("Voice agent editing video with prompt:", voicePrompt);
+    
+    if (videoId) {
+      // Find the video in gallery and edit it
+      const videoItem = galleryItems.find(item => item.id === videoId);
+      if (videoItem) {
+        const updatedItem = { ...videoItem, prompt: voicePrompt };
+        await editFromGallery(updatedItem);
+      }
+    } else if (videoUrl) {
+      // Edit current video
+      setPrompt(voicePrompt);
+      await startGeneration();
     }
   };
 
@@ -475,12 +519,21 @@ const VeoStudio: React.FC = () => {
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                   Veo 3 Studio
-                </h1>
+        </h1>
                 <p className="text-gray-400 text-sm">Next-Gen AI Video Creation</p>
               </div>
             </div>
             
             <div className="hidden md:flex items-center space-x-6">
+              <button
+                onClick={() => setShowVoiceAgent(!showVoiceAgent)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white transition-all backdrop-blur-sm shadow-lg"
+                title="Voice Agent"
+              >
+                <Mic className="w-4 h-4" />
+                Voice Agent
+              </button>
+              
               <button
                 onClick={() => setShowGallery(true)}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 hover:text-white transition-all backdrop-blur-sm border border-gray-700 hover:border-purple-500"
@@ -504,8 +557,21 @@ const VeoStudio: React.FC = () => {
         </div>
       </header>
 
+      {/* Mobile Voice Agent Button */}
+      <div className="md:hidden fixed bottom-20 right-4 z-20">
+        <button
+          onClick={() => setShowVoiceAgent(!showVoiceAgent)}
+          className="w-14 h-14 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all transform hover:scale-110"
+          title="Voice Agent"
+        >
+          <Mic className="w-6 h-6" />
+        </button>
+      </div>
+
       {/* Main Content */}
-      <main className="relative z-10 pt-8 pb-32">
+      <main className={`relative z-10 pt-8 pb-32 transition-all duration-300 ${
+        showVoiceAgent ? 'ml-80' : 'ml-0'
+      }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {!videoUrl ? (
             <div className="text-center py-20">
@@ -630,6 +696,20 @@ const VeoStudio: React.FC = () => {
         onDownloadItem={downloadFromGallery}
         onEditItem={editFromGallery}
       />
+
+      {/* Voice Agent */}
+      {showVoiceAgent && (
+        <VoiceSphere
+          apiKey="AIzaSyCGIqOfyKS6Ha0i4PgTsBZ8kXeomBJvRtQ"
+          vapiPubKey="faafd76e-6da0-4fe6-84a9-8b7dbd2d7414"
+          vapiAssistantId="a989c3c1-3565-439e-aa81-ba8e6bd7122d"
+          onGenerateVideo={handleVoiceGenerateVideo}
+          onGenerateImage={handleVoiceGenerateImage}
+          onEditVideo={handleVoiceEditVideo}
+          currentVideoId={currentVideoId}
+          currentImagePrompt={imagePrompt}
+        />
+      )}
     </div>
   );
 };
