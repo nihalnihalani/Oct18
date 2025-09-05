@@ -25,6 +25,7 @@ export async function POST(req: Request) {
       operation: { name } as unknown as never,
     });
 
+    console.log("Operation response:", JSON.stringify(fresh, null, 2));
     return NextResponse.json(fresh);
   } catch (error) {
     console.error("Error polling operation:", error);

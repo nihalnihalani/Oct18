@@ -32,6 +32,7 @@ const VeoStudio: React.FC = () => {
 
   const [operationName, setOperationName] = useState<VeoOperationName>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const videoBlobRef = useRef<Blob | null>(null);
   const trimmedBlobRef = useRef<Blob | null>(null);
@@ -55,6 +56,7 @@ const VeoStudio: React.FC = () => {
     setGeneratedImage(null);
     setOperationName(null);
     setIsGenerating(false);
+    setIsDownloading(false);
     setVideoUrl(null);
     if (videoBlobRef.current) {
       URL.revokeObjectURL(URL.createObjectURL(videoBlobRef.current));
@@ -146,19 +148,61 @@ const VeoStudio: React.FC = () => {
           body: JSON.stringify({ name: operationName }),
         });
         const fresh = await resp.json();
+        console.log("Polling response:", fresh);
+        
         if (fresh?.done) {
-          const fileUri = fresh?.response?.generatedVideos?.[0]?.video?.uri;
+          console.log("Operation completed, looking for video URI...");
+          
+          // Try multiple possible response structures
+          let fileUri = fresh?.response?.generatedVideos?.[0]?.video?.uri;
+          
+          if (!fileUri) {
+            // Try alternative structure
+            fileUri = fresh?.response?.video?.uri;
+          }
+          
+          if (!fileUri) {
+            // Try another alternative structure
+            fileUri = fresh?.result?.generatedVideos?.[0]?.video?.uri;
+          }
+          
+          if (!fileUri) {
+            // Try direct result structure
+            fileUri = fresh?.result?.video?.uri;
+          }
+          
+          console.log("Found file URI:", fileUri);
+          
           if (fileUri) {
+            console.log("Downloading video from URI:", fileUri);
+            setIsDownloading(true);
+            
             const dl = await fetch("/api/veo/download", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ uri: fileUri }),
             });
+            
+            if (!dl.ok) {
+              console.error("Download failed:", dl.status, dl.statusText);
+              const errorText = await dl.text();
+              console.error("Download error details:", errorText);
+              setIsGenerating(false);
+              setIsDownloading(false);
+              return;
+            }
+            
             const blob = await dl.blob();
+            console.log("Downloaded blob:", blob.size, "bytes, type:", blob.type);
+            
             videoBlobRef.current = blob;
             const url = URL.createObjectURL(blob);
+            console.log("Created video URL:", url);
             setVideoUrl(url);
             originalVideoUrlRef.current = url;
+            setIsDownloading(false);
+          } else {
+            console.error("No file URI found in response. Full response structure:", fresh);
           }
           setIsGenerating(false);
           return;
@@ -247,13 +291,17 @@ const VeoStudio: React.FC = () => {
       {/* Center content */}
       <div className="flex items-center justify-center min-h-screen pb-40 px-4">
         {!videoUrl &&
-          (isGenerating ? (
+          (isGenerating || isDownloading ? (
             <div className="text-center">
               <div className="inline-flex items-center gap-3 px-6 py-4 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20">
                 <div className="w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-slate-700 font-medium">Generating your video...</span>
+                <span className="text-slate-700 font-medium">
+                  {isGenerating ? "Generating your video..." : "Downloading your video..."}
+                </span>
               </div>
-              <p className="text-slate-500 text-sm mt-3">This may take a few minutes</p>
+              <p className="text-slate-500 text-sm mt-3">
+                {isGenerating ? "This may take a few minutes" : "Almost ready!"}
+              </p>
             </div>
           ) : (
             <div className="text-center max-w-md animate-fadeInUp">

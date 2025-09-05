@@ -9,10 +9,14 @@ export async function POST(req: Request) {
     const body = await req.json();
     const uri: string | undefined = body?.uri || body?.file?.uri;
 
+    console.log("Download request body:", body);
+    console.log("Extracted URI:", uri);
+
     if (!uri) {
       return NextResponse.json({ error: "Missing file uri" }, { status: 400 });
     }
 
+    console.log("Fetching video from URI:", uri);
     const resp = await fetch(uri, {
       headers: {
         "x-goog-api-key": process.env.GEMINI_API_KEY as string,
@@ -20,6 +24,9 @@ export async function POST(req: Request) {
       },
       redirect: "follow",
     });
+
+    console.log("Download response status:", resp.status, resp.statusText);
+    console.log("Download response headers:", Object.fromEntries(resp.headers.entries()));
 
     if (!resp.ok) {
       const text = await resp.text().catch(() => "");
