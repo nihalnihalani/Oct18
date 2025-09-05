@@ -95,6 +95,10 @@ const VeoStudio: React.FC = () => {
     originalVideoUrlRef.current = null;
   };
 
+  const closeGeneratedImage = () => {
+    setGeneratedImage(null);
+  };
+
   // Imagen helper
   const generateWithImagen = useCallback(async () => {
     console.log("generateWithImagen called with prompt:", imagePrompt);
@@ -494,6 +498,7 @@ const VeoStudio: React.FC = () => {
         imageFile={imageFile}
         generatedImage={generatedImage}
         resetAll={resetAll}
+        closeGeneratedImage={closeGeneratedImage}
       />
     </div>
   );

@@ -8,6 +8,7 @@ import {
   ArrowRight,
   Loader2,
   RotateCcw,
+  X,
 } from "lucide-react";
 import NextImage from "next/image";
 import ModelSelector from "@/components/ui/ModelSelector";
@@ -37,6 +38,7 @@ interface ComposerProps {
   generatedImage: string | null;
 
   resetAll: () => void;
+  closeGeneratedImage: () => void;
 }
 
 const Composer: React.FC<ComposerProps> = ({
@@ -57,6 +59,7 @@ const Composer: React.FC<ComposerProps> = ({
   imageFile,
   generatedImage,
   resetAll,
+  closeGeneratedImage,
 }) => {
   const [isDragging, setIsDragging] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -171,20 +174,29 @@ const Composer: React.FC<ComposerProps> = ({
             
             {(imageFile || generatedImage) && (
               <div className="flex items-start justify-start">
-                <div className="mt-2">
+                <div className="mt-2 relative">
                   {imageFile && (
                     <div className="text-sm text-purple-400 bg-gray-900/50 px-3 py-2 rounded-lg border border-gray-700">
                       Selected: {imageFile.name}
                     </div>
                   )}
                   {!imageFile && generatedImage && (
-                    <NextImage
-                      src={generatedImage}
-                      alt="Generated"
-                      width={320}
-                      height={180}
-                      className="max-h-48 rounded-xl border-2 border-gray-600 shadow-lg w-auto h-auto"
-                    />
+                    <div className="relative inline-block">
+                      <NextImage
+                        src={generatedImage}
+                        alt="Generated"
+                        width={320}
+                        height={180}
+                        className="max-h-48 rounded-xl border-2 border-gray-600 shadow-lg w-auto h-auto"
+                      />
+                      <button
+                        onClick={closeGeneratedImage}
+                        className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white shadow-lg transition-all transform hover:scale-110"
+                        title="Close Image"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
