@@ -124,8 +124,7 @@ If the user wants to create content, use the creative brief to generate a detail
         }]
       })
       
-      const response = await result.response
-      const responseText = response.text().trim()
+      const responseText = (result.text || '').trim()
       
       try {
         const command = JSON.parse(responseText)

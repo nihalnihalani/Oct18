@@ -28,22 +28,25 @@ export async function POST(req: Request) {
     console.log("Audio MIME type:", mimeType);
 
     // Use Gemini to transcribe the audio
-    const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
-    
-    const result = await model.generateContent([
-      {
-        inlineData: {
-          data: base64Audio,
-          mimeType: mimeType,
-        },
-      },
-      {
-        text: "Please transcribe this audio to text. Return only the transcribed text without any additional commentary or formatting.",
-      },
-    ]);
+    const result = await ai.models.generateContent({
+      model: "gemini-1.5-flash",
+      contents: [{
+        role: 'user',
+        parts: [
+          {
+            inlineData: {
+              data: base64Audio,
+              mimeType: mimeType,
+            },
+          },
+          {
+            text: "Please transcribe this audio to text. Return only the transcribed text without any additional commentary or formatting.",
+          },
+        ],
+      }],
+    });
 
-    const response = await result.response;
-    const transcription = response.text();
+    const transcription = result.text || '';
 
     console.log("Transcription result:", transcription);
 

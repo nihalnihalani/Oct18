@@ -1,500 +1,117 @@
 "use client";
 
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { Clock, X, Images, Mic } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { Mic, Images, X } from "lucide-react";
+
+// Components
 import Composer from "@/components/ui/Composer";
 import VideoPlayer from "@/components/ui/VideoPlayer";
 import VeoGallery from "@/components/ui/VeoGallery";
 import VoiceSphere from "@/components/ui/VoiceSphere";
-import { MOCK_GALLERY_ITEMS } from "@/lib/mockGalleryItems";
+import AgentPanel from "@/components/ui/AgentPanel";
 
-type VeoOperationName = string | null;
+// Hooks
+import { useVideoGeneration } from "@/lib/hooks/useVideoGeneration";
+import { useImageGeneration } from "@/lib/hooks/useImageGeneration";
+import { useGallery } from "@/lib/hooks/useGallery";
 
-interface GalleryItem {
-  id: string;
-  type: 'image' | 'video';
-  src: string;
-  prompt: string;
-  model: string;
-  createdAt: Date;
-  thumbnail?: string;
-}
-
-const POLL_INTERVAL_MS = 5000;
+// Constants & Config
+import { DEFAULT_MODEL, DEFAULT_ASPECT_RATIO } from "@/lib/constants";
+import { config } from "@/lib/config";
 
 const VeoStudio: React.FC = () => {
-  const [prompt, setPrompt] = useState(""); // Video prompt
+  // Basic state
+  const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState("");
-  const [aspectRatio, setAspectRatio] = useState("16:9");
-  const [selectedModel, setSelectedModel] = useState(
-    "veo-3.0-generate-preview"
-  );
-
-  // Imagen-specific prompt
+  const [aspectRatio, setAspectRatio] = useState(DEFAULT_ASPECT_RATIO);
+  const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL);
   const [imagePrompt, setImagePrompt] = useState("");
-
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagenBusy, setImagenBusy] = useState(false);
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null); // data URL
-
-  const [operationName, setOperationName] = useState<VeoOperationName>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
-  const videoBlobRef = useRef<Blob | null>(null);
-  const trimmedBlobRef = useRef<Blob | null>(null);
-  const trimmedUrlRef = useRef<string | null>(null);
-  const originalVideoUrlRef = useRef<string | null>(null);
-
   const [showImageTools, setShowImageTools] = useState(false);
-  
-  // Gallery state
   const [showGallery, setShowGallery] = useState(false);
-  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(() => {
-    // Initialize with mock items
-    return MOCK_GALLERY_ITEMS.map(item => ({
-      ...item,
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      createdAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000), // Random date within last week
-    }));
-  });
-
-  // Voice Agent state
   const [showVoiceAgent, setShowVoiceAgent] = useState(false);
+  const [showAgentPanel, setShowAgentPanel] = useState(true);
   const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
 
+  // Custom hooks
+  const gallery = useGallery({
+    onEditStart: (operationName) => {
+      videoGen.closeVideo();
+      // The operation will be picked up by the polling effect
+    },
+  });
+
+  const imageGen = useImageGeneration({
+    onAddToGallery: gallery.addToGallery,
+  });
+
+  const videoGen = useVideoGeneration({
+    onAddToGallery: (item) => {
+      gallery.addToGallery({
+        ...item,
+        prompt,
+        model: selectedModel,
+      });
+    },
+  });
+
+  // Computed values
   const canStart = useMemo(() => {
     const hasPrompt = !!prompt.trim();
-    const hasImage = !!(imageFile || generatedImage);
+    const hasImage = !!(imageGen.imageFile || imageGen.generatedImage);
     const needsImage = showImageTools;
-    const canStartResult = hasPrompt && (!needsImage || hasImage);
-    
-    console.log("canStart check:", {
-      hasPrompt,
-      hasImage,
-      needsImage,
-      canStartResult,
-      prompt: prompt.substring(0, 30) + "...",
-      showImageTools
-    });
-    
-    return canStartResult;
-  }, [prompt, showImageTools, imageFile, generatedImage]);
+    return hasPrompt && (!needsImage || hasImage);
+  }, [prompt, showImageTools, imageGen.imageFile, imageGen.generatedImage]);
 
+  // Actions
   const resetAll = () => {
     setPrompt("");
     setNegativePrompt("");
-    setAspectRatio("16:9");
+    setAspectRatio(DEFAULT_ASPECT_RATIO);
     setImagePrompt("");
-    setImageFile(null);
-    setGeneratedImage(null);
-    setOperationName(null);
-    setIsGenerating(false);
-    setIsDownloading(false);
-    setVideoUrl(null);
-    if (videoBlobRef.current) {
-      URL.revokeObjectURL(URL.createObjectURL(videoBlobRef.current));
-      videoBlobRef.current = null;
-    }
-    if (trimmedUrlRef.current) {
-      URL.revokeObjectURL(trimmedUrlRef.current);
-      trimmedUrlRef.current = null;
-    }
-    trimmedBlobRef.current = null;
+    setShowImageTools(false);
+    imageGen.resetImageState();
+    videoGen.closeVideo();
   };
 
-  const closeVideo = () => {
-    setVideoUrl(null);
-    if (videoBlobRef.current) {
-      URL.revokeObjectURL(URL.createObjectURL(videoBlobRef.current));
-      videoBlobRef.current = null;
-    }
-    if (trimmedUrlRef.current) {
-      URL.revokeObjectURL(trimmedUrlRef.current);
-      trimmedUrlRef.current = null;
-    }
-    trimmedBlobRef.current = null;
-    originalVideoUrlRef.current = null;
-  };
-
-  const closeGeneratedImage = () => {
-    setGeneratedImage(null);
-  };
-
-  // Gallery functions
-  const addToGallery = (item: Omit<GalleryItem, 'id' | 'createdAt'>) => {
-    const newItem: GalleryItem = {
-      ...item,
-      id: Date.now().toString(),
-      createdAt: new Date(),
-    };
-    setGalleryItems(prev => [newItem, ...prev]);
-  };
-
-  const deleteFromGallery = (id: string) => {
-    setGalleryItems(prev => prev.filter(item => item.id !== id));
-  };
-
-  const downloadFromGallery = (item: GalleryItem) => {
-    const link = document.createElement('a');
-    link.href = item.src;
-    link.download = `veo3_${item.type}_${item.id}.${item.type === 'image' ? 'png' : 'mp4'}`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const editFromGallery = async (item: GalleryItem) => {
-    console.log("Editing video with new prompt:", item.prompt);
-    setCurrentVideoId(item.id); // Set current video ID for voice agent context
+  const startGeneration = () => {
+    if (!canStart) return;
     
-    try {
-      // Start video regeneration
-      const resp = await fetch("/api/veo/regenerate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          prompt: item.prompt,
-          model: item.model 
-        }),
-      });
-      
-      if (!resp.ok) {
-        const errorData = await resp.json();
-        console.error("Video regeneration failed:", errorData);
-        alert(`Video regeneration failed: ${errorData.error || 'Unknown error'}`);
-        return;
-      }
-      
-      const json = await resp.json();
-      console.log("Video regeneration response:", json);
-      
-      if (json?.name) {
-        // Set up polling for the new video
-        setOperationName(json.name);
-        setIsGenerating(true);
-        setVideoUrl(null);
-        console.log("Video regeneration started successfully:", json.name);
-      } else {
-        console.error("No operation name in response:", json);
-        alert("No operation name received from server");
-      }
-    } catch (e) {
-      console.error("Video regeneration error:", e);
-      alert(`Video regeneration failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
-    }
+    videoGen.startGeneration({
+      prompt,
+      selectedModel,
+      negativePrompt,
+      aspectRatio,
+      imageFile: imageGen.imageFile,
+      generatedImage: imageGen.generatedImage,
+      showImageTools,
+    });
   };
 
-  // Voice Agent functions
-  const handleVoiceGenerateVideo = async (voicePrompt: string) => {
-    console.log("Voice agent setting creative brief as prompt:", voicePrompt);
+  // Voice Agent handlers
+  const handleVoiceGenerateVideo = (voicePrompt: string) => {
     setPrompt(voicePrompt);
     setShowImageTools(false);
-    setGeneratedImage(null);
-    setImageFile(null);
-    
-    // Just set the prompt, don't auto-generate
-    console.log("Creative brief has been set in the prompt field");
+    imageGen.setGeneratedImage(null);
+    imageGen.setImageFile(null);
   };
 
   const handleVoiceGenerateImage = async (voicePrompt: string) => {
-    console.log("Voice agent generating image with prompt:", voicePrompt);
     setImagePrompt(voicePrompt);
     setShowImageTools(true);
-    
-    // Generate image
-    await generateWithImagen();
+    await imageGen.generateWithImagen(voicePrompt);
   };
 
   const handleVoiceEditVideo = async (voicePrompt: string, videoId?: string) => {
-    console.log("Voice agent editing video with prompt:", voicePrompt);
-    
     if (videoId) {
-      // Find the video in gallery and edit it
-      const videoItem = galleryItems.find(item => item.id === videoId);
+      const videoItem = gallery.galleryItems.find(item => item.id === videoId);
       if (videoItem) {
         const updatedItem = { ...videoItem, prompt: voicePrompt };
-        await editFromGallery(updatedItem);
+        await gallery.editFromGallery(updatedItem);
       }
-    } else if (videoUrl) {
-      // Edit current video
+    } else if (videoGen.videoUrl) {
       setPrompt(voicePrompt);
       await startGeneration();
     }
-  };
-
-  // Imagen helper
-  const generateWithImagen = useCallback(async () => {
-    console.log("generateWithImagen called with prompt:", imagePrompt);
-    setImagenBusy(true);
-    setGeneratedImage(null);
-    try {
-      console.log("Generating image with prompt:", imagePrompt);
-      const resp = await fetch("/api/imagen/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: imagePrompt }),
-      });
-      
-      console.log("Image generation response status:", resp.status);
-      
-      if (!resp.ok) {
-        const errorData = await resp.json();
-        console.error("Image generation failed:", errorData);
-        alert(`Image generation failed: ${errorData.error || 'Unknown error'}`);
-        return;
-      }
-      
-      const json = await resp.json();
-      console.log("Image generation response:", json);
-      
-      if (json?.image?.imageBytes) {
-        const dataUrl = `data:${json.image.mimeType};base64,${json.image.imageBytes}`;
-        setGeneratedImage(dataUrl);
-            
-            // Add to gallery
-            addToGallery({
-              type: 'image',
-              src: dataUrl,
-              prompt: imagePrompt,
-              model: 'gemini-2.5-flash-image-preview',
-            });
-            
-            console.log("Image generated successfully");
-            alert("Image generated successfully!");
-          } else {
-            console.error("No image data in response:", json);
-            alert("No image data received from server");
-      }
-    } catch (e) {
-      console.error("Image generation error:", e);
-      alert(`Image generation failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
-    } finally {
-      setImagenBusy(false);
-    }
-  }, [imagePrompt]);
-
-  // Start Veo job
-  const startGeneration = useCallback(async () => {
-    if (!canStart) return;
-    setIsGenerating(true);
-    setVideoUrl(null);
-
-    console.log("Starting video generation with:", {
-      prompt: prompt.substring(0, 50) + "...",
-      model: selectedModel,
-      aspectRatio,
-      hasImage: !!(imageFile || generatedImage),
-      showImageTools
-    });
-
-    const form = new FormData();
-    form.append("prompt", prompt);
-    form.append("model", selectedModel);
-    if (negativePrompt) form.append("negativePrompt", negativePrompt);
-    if (aspectRatio) form.append("aspectRatio", aspectRatio);
-
-    if (showImageTools) {
-      if (imageFile) {
-        form.append("imageFile", imageFile);
-        console.log("Using uploaded image file:", imageFile.name);
-      } else if (generatedImage) {
-        const [meta, b64] = generatedImage.split(",");
-        const mime = meta?.split(";")?.[0]?.replace("data:", "") || "image/png";
-        form.append("imageBase64", b64);
-        form.append("imageMimeType", mime);
-        console.log("Using generated image");
-      }
-    }
-
-    try {
-      const resp = await fetch("/api/veo/generate", {
-        method: "POST",
-        body: form,
-      });
-      
-      if (!resp.ok) {
-        const errorData = await resp.json();
-        console.error("Video generation failed:", errorData);
-        alert(`Video generation failed: ${errorData.error || 'Unknown error'}`);
-        setIsGenerating(false);
-        return;
-      }
-      
-      const json = await resp.json();
-      console.log("Video generation response:", json);
-      
-      if (json?.name) {
-        setOperationName(json.name);
-        console.log("Video generation started successfully:", json.name);
-      } else {
-        console.error("No operation name in response:", json);
-        alert("No operation name received from server");
-        setIsGenerating(false);
-      }
-    } catch (e) {
-      console.error("Video generation error:", e);
-      alert(`Video generation failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
-      setIsGenerating(false);
-    }
-  }, [
-    canStart,
-    prompt,
-    selectedModel,
-    negativePrompt,
-    aspectRatio,
-    showImageTools,
-    imageFile,
-    generatedImage,
-  ]);
-
-  // Poll operation until done then download
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    async function poll() {
-      if (!operationName || videoUrl) return;
-      try {
-        const resp = await fetch("/api/veo/operation", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: operationName }),
-        });
-        const fresh = await resp.json();
-        console.log("Polling response:", fresh);
-        
-        if (fresh?.done) {
-          console.log("Operation completed, looking for video URI...");
-          
-          // Try multiple possible response structures
-          let fileUri = fresh?.response?.generatedVideos?.[0]?.video?.uri;
-          
-          if (!fileUri) {
-            // Try alternative structure
-            fileUri = fresh?.response?.video?.uri;
-          }
-          
-          if (!fileUri) {
-            // Try another alternative structure
-            fileUri = fresh?.result?.generatedVideos?.[0]?.video?.uri;
-          }
-          
-          if (!fileUri) {
-            // Try direct result structure
-            fileUri = fresh?.result?.video?.uri;
-          }
-          
-          console.log("Found file URI:", fileUri);
-          
-          if (fileUri) {
-            console.log("Downloading video from URI:", fileUri);
-            setIsDownloading(true);
-            
-            const dl = await fetch("/api/veo/download", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ uri: fileUri }),
-            });
-            
-            if (!dl.ok) {
-              console.error("Download failed:", dl.status, dl.statusText);
-              const errorText = await dl.text();
-              console.error("Download error details:", errorText);
-              setIsGenerating(false);
-              setIsDownloading(false);
-              return;
-            }
-            
-            const blob = await dl.blob();
-            console.log("Downloaded blob:", blob.size, "bytes, type:", blob.type);
-            
-            videoBlobRef.current = blob;
-            const url = URL.createObjectURL(blob);
-            console.log("Created video URL:", url);
-            setVideoUrl(url);
-            originalVideoUrlRef.current = url;
-            
-            // Add to gallery
-            addToGallery({
-              type: 'video',
-              src: url,
-              prompt: prompt,
-              model: selectedModel,
-            });
-            
-            setIsDownloading(false);
-          } else {
-            console.error("No file URI found in response. Full response structure:", fresh);
-          }
-          setIsGenerating(false);
-          return;
-        }
-      } catch (e) {
-        console.error(e);
-        setIsGenerating(false);
-      } finally {
-        timer = setTimeout(poll, POLL_INTERVAL_MS);
-      }
-    }
-    if (operationName && !videoUrl) {
-      timer = setTimeout(poll, POLL_INTERVAL_MS);
-    }
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
-  }, [operationName, videoUrl]);
-
-  const onPickImage = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) {
-      setImageFile(f);
-      setGeneratedImage(null);
-    }
-  };
-
-  const handleTrimmedOutput = (blob: Blob) => {
-    trimmedBlobRef.current = blob; // likely webm
-    if (trimmedUrlRef.current) {
-      URL.revokeObjectURL(trimmedUrlRef.current);
-    }
-    trimmedUrlRef.current = URL.createObjectURL(blob);
-    setVideoUrl(trimmedUrlRef.current);
-  };
-
-  const handleResetTrimState = () => {
-    if (trimmedUrlRef.current) {
-      URL.revokeObjectURL(trimmedUrlRef.current);
-      trimmedUrlRef.current = null;
-    }
-    trimmedBlobRef.current = null;
-    if (originalVideoUrlRef.current) {
-      setVideoUrl(originalVideoUrlRef.current);
-    }
-  };
-
-  const downloadVideo = async () => {
-    const blob = trimmedBlobRef.current || videoBlobRef.current;
-    if (!blob) return;
-    const isTrimmed = !!trimmedBlobRef.current;
-    const filename = isTrimmed ? "veo3_video_trimmed.webm" : "veo3_video.mp4";
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.style.display = "none";
-    link.href = url;
-    link.setAttribute("download", filename);
-    link.setAttribute("rel", "noopener");
-    link.target = "_self";
-    document.body.appendChild(link);
-    link.click();
-    setTimeout(() => {
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    }, 0);
   };
 
   return (
@@ -519,34 +136,38 @@ const VeoStudio: React.FC = () => {
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                   Veo 3 Studio
-        </h1>
+                </h1>
                 <p className="text-gray-400 text-sm">Next-Gen AI Video Creation</p>
               </div>
             </div>
             
             <div className="hidden md:flex items-center space-x-6">
-              <button
-                onClick={() => setShowVoiceAgent(!showVoiceAgent)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white transition-all backdrop-blur-sm shadow-lg"
-                title="Voice Agent"
-              >
-                <Mic className="w-4 h-4" />
-                Voice Agent
-              </button>
+              {config.features.voiceAgent && (
+                <button
+                  onClick={() => setShowVoiceAgent(!showVoiceAgent)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white transition-all backdrop-blur-sm shadow-lg"
+                  title="Voice Agent"
+                >
+                  <Mic className="w-4 h-4" />
+                  Voice Agent
+                </button>
+              )}
               
-              <button
-                onClick={() => setShowGallery(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 hover:text-white transition-all backdrop-blur-sm border border-gray-700 hover:border-purple-500"
-                title="Product Gallery"
-              >
-                <Images className="w-4 h-4" />
-                Product Gallery
-                {galleryItems.length > 0 && (
-                  <span className="px-2 py-0.5 bg-purple-500 text-white text-xs rounded-full">
-                    {galleryItems.length}
-                  </span>
-                )}
-              </button>
+              {config.features.gallery && (
+                <button
+                  onClick={() => setShowGallery(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 hover:text-white transition-all backdrop-blur-sm border border-gray-700 hover:border-purple-500"
+                  title="Product Gallery"
+                >
+                  <Images className="w-4 h-4" />
+                  Product Gallery
+                  {gallery.galleryItems.length > 0 && (
+                    <span className="px-2 py-0.5 bg-purple-500 text-white text-xs rounded-full">
+                      {gallery.galleryItems.length}
+                    </span>
+                  )}
+                </button>
+              )}
               
               <div className="flex items-center space-x-2 text-sm text-gray-400">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
@@ -558,24 +179,26 @@ const VeoStudio: React.FC = () => {
       </header>
 
       {/* Mobile Voice Agent Button */}
-      <div className="md:hidden fixed bottom-20 right-4 z-20">
-        <button
-          onClick={() => setShowVoiceAgent(!showVoiceAgent)}
-          className="w-14 h-14 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all transform hover:scale-110"
-          title="Voice Agent"
-        >
-          <Mic className="w-6 h-6" />
-        </button>
-      </div>
+      {config.features.voiceAgent && (
+        <div className="md:hidden fixed bottom-20 right-4 z-20">
+          <button
+            onClick={() => setShowVoiceAgent(!showVoiceAgent)}
+            className="w-14 h-14 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all transform hover:scale-110"
+            title="Voice Agent"
+          >
+            <Mic className="w-6 h-6" />
+          </button>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className={`relative z-10 pt-8 pb-32 transition-all duration-300 ${
         showVoiceAgent ? 'ml-80' : 'ml-0'
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {!videoUrl ? (
+          {!videoGen.videoUrl ? (
             <div className="text-center py-20">
-              {isGenerating || isDownloading ? (
+              {videoGen.isGenerating || videoGen.isDownloading ? (
                 <div className="max-w-md mx-auto">
                   <div className="relative">
                     <div className="w-32 h-32 mx-auto mb-8 relative">
@@ -586,10 +209,10 @@ const VeoStudio: React.FC = () => {
                     </div>
                   </div>
                   <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                    {isGenerating ? "Creating Magic..." : "Preparing Your Video..."}
+                    {videoGen.isGenerating ? "Creating Magic..." : "Preparing Your Video..."}
                   </h2>
                   <p className="text-gray-400 text-lg">
-                    {isGenerating ? "Our AI is crafting your vision into reality" : "Almost ready to unveil your creation"}
+                    {videoGen.isGenerating ? "Our AI is crafting your vision into reality" : "Almost ready to unveil your creation"}
                   </p>
                   <div className="mt-8 flex justify-center">
                     <div className="flex space-x-2">
@@ -640,28 +263,27 @@ const VeoStudio: React.FC = () => {
           ) : (
             <div className="py-8">
               <div className="max-w-6xl mx-auto">
-                {/* Close Button */}
                 <div className="flex justify-end mb-4">
                   <button
-                    onClick={closeVideo}
+                    onClick={videoGen.closeVideo}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800/90 hover:bg-gray-700/90 text-gray-300 hover:text-white transition-all backdrop-blur-sm border border-gray-700 hover:border-gray-600 shadow-lg hover:shadow-xl transform hover:scale-105"
                     title="Close Video"
                   >
                     <X className="w-4 h-4" />
                     Close Video
                   </button>
-            </div>
+                </div>
                 
-            <VideoPlayer
-              src={videoUrl}
-              onOutputChanged={handleTrimmedOutput}
-              onDownload={downloadVideo}
-              onResetTrim={handleResetTrimState}
-            />
+                <VideoPlayer
+                  src={videoGen.videoUrl}
+                  onOutputChanged={videoGen.handleTrimmedOutput}
+                  onDownload={videoGen.downloadVideo}
+                  onResetTrim={videoGen.handleResetTrimState}
+                />
               </div>
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+        </div>
       </main>
 
       <Composer
@@ -670,44 +292,52 @@ const VeoStudio: React.FC = () => {
         selectedModel={selectedModel}
         setSelectedModel={setSelectedModel}
         canStart={canStart}
-        isGenerating={isGenerating}
+        isGenerating={videoGen.isGenerating}
         startGeneration={startGeneration}
         showImageTools={showImageTools}
         setShowImageTools={setShowImageTools}
         imagePrompt={imagePrompt}
         setImagePrompt={setImagePrompt}
-        imagenBusy={imagenBusy}
-        onPickImage={onPickImage}
-        generateWithImagen={generateWithImagen}
-        imageFile={imageFile}
-        generatedImage={generatedImage}
+        imagenBusy={imageGen.imagenBusy}
+        onPickImage={imageGen.onPickImage}
+        generateWithImagen={() => imageGen.generateWithImagen(imagePrompt)}
+        imageFile={imageGen.imageFile}
+        generatedImage={imageGen.generatedImage}
         resetAll={resetAll}
-        closeGeneratedImage={closeGeneratedImage}
+        closeGeneratedImage={imageGen.closeGeneratedImage}
         onOpenGallery={() => setShowGallery(true)}
-        galleryItemCount={galleryItems.length}
+        galleryItemCount={gallery.galleryItems.length}
       />
 
       {/* Veo Gallery */}
-      <VeoGallery
-        isOpen={showGallery}
-        onClose={() => setShowGallery(false)}
-        galleryItems={galleryItems}
-        onDeleteItem={deleteFromGallery}
-        onDownloadItem={downloadFromGallery}
-        onEditItem={editFromGallery}
-      />
+      {config.features.gallery && (
+        <VeoGallery
+          isOpen={showGallery}
+          onClose={() => setShowGallery(false)}
+          galleryItems={gallery.galleryItems}
+          onDeleteItem={gallery.deleteFromGallery}
+          onDownloadItem={gallery.downloadFromGallery}
+          onEditItem={gallery.editFromGallery}
+        />
+      )}
 
       {/* Voice Agent */}
-      {showVoiceAgent && (
+      {config.features.voiceAgent && showVoiceAgent && (
         <VoiceSphere
-          apiKey="AIzaSyCGIqOfyKS6Ha0i4PgTsBZ8kXeomBJvRtQ"
-          vapiPubKey="faafd76e-6da0-4fe6-84a9-8b7dbd2d7414"
-          vapiAssistantId="a989c3c1-3565-439e-aa81-ba8e6bd7122d"
+          apiKey={config.geminiApiKeyPublic}
           onGenerateVideo={handleVoiceGenerateVideo}
           onGenerateImage={handleVoiceGenerateImage}
           onEditVideo={handleVoiceEditVideo}
           currentVideoId={currentVideoId}
           currentImagePrompt={imagePrompt}
+        />
+      )}
+      
+      {/* Agent Panel */}
+      {config.features.agentPanel && showAgentPanel && (
+        <AgentPanel
+          currentPrompt={prompt}
+          onOptimizePrompt={(optimized) => setPrompt(optimized)}
         />
       )}
     </div>

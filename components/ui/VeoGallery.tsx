@@ -247,7 +247,7 @@ const VeoGallery: React.FC<VeoGalleryProps> = ({
                           />
                         ) : (
                           <video
-                            ref={(el) => (videoRefs.current[item.id] = el)}
+                            ref={(el) => { videoRefs.current[item.id] = el; }}
                             src={item.src}
                             className="w-full h-48 object-cover pointer-events-none"
                             muted
@@ -348,7 +348,7 @@ const VeoGallery: React.FC<VeoGalleryProps> = ({
                             />
                           ) : (
                             <video
-                              ref={(el) => (videoRefs.current[item.id] = el)}
+                              ref={(el) => { videoRefs.current[item.id] = el; }}
                               src={item.src}
                               className="w-full h-full object-cover"
                               muted

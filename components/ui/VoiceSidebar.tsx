@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { GoogleGenAI } from '@google/genai';
-import Vapi from "@vapi-ai/web";
+import { createGeminiLiveClient, type GeminiLiveClient, type TranscriptMessage } from '@/lib/geminiLive';
 import { Mic, MicOff, Square, Loader2, Sparkles, X, Minimize2 } from 'lucide-react';
 
 interface VoiceSidebarProps {
@@ -40,7 +40,7 @@ export default function VoiceSidebar({
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   
-  const vapiRef = useRef<Vapi | null>(null);
+  const geminiClientRef = useRef<GeminiLiveClient | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const aiRef = useRef<GoogleGenAI | null>(null);
 
@@ -136,14 +136,18 @@ Respond ONLY with the JSON object, no additional text.
 `;
 
     try {
-      const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
-      const result = await model.generateContent([
-        { text: context },
-        { text: userInput }
-      ]);
+      const result = await ai.models.generateContent({
+        model: "gemini-1.5-flash",
+        contents: [{
+          role: 'user',
+          parts: [
+            { text: context },
+            { text: userInput }
+          ]
+        }]
+      });
 
-      const response = await result.response;
-      const responseText = response.text().trim();
+      const responseText = (result.text || '').trim();
 
       // Parse JSON response
       const parsedResponse = JSON.parse(responseText);
@@ -162,36 +166,59 @@ Respond ONLY with the JSON object, no additional text.
     }
   }, [currentVideoId, currentImagePrompt]);
 
-  // Initialize Vapi and set up event listeners
+  // Initialize Gemini Live client
   useEffect(() => {
     if (!isOpen) return;
 
-    // For now, we'll use a mock Vapi setup since we don't have the actual keys
-    // In production, you would initialize with real Vapi keys
-    const mockVapiInstance = {
-      on: (event: string, callback: Function) => {
-        console.log(`Mock Vapi event listener: ${event}`);
-      },
-      start: (assistantId: string) => {
-        console.log(`Mock Vapi start with assistant: ${assistantId}`);
-        setIsConnecting(false);
-        setIsActive(true);
-        setError(null);
-        setConversationHistory([]);
-        setSummary('');
-      },
-      stop: () => {
-        console.log('Mock Vapi stop');
-        setIsActive(false);
-        setIsConnecting(false);
-      }
-    };
+    const client = createGeminiLiveClient({
+      apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || "",
+      systemPrompt: `You are a creative AI assistant for Veo 3 Studio. Help users create content through voice commands.
+Analyze their requests and provide helpful, conversational responses.`,
+    });
 
-    vapiRef.current = mockVapiInstance as any;
+    geminiClientRef.current = client;
+
+    client.on('connected', () => {
+      console.log('Gemini Live connected');
+      setIsConnecting(false);
+      setIsActive(true);
+      setError(null);
+      setConversationHistory([]);
+      setSummary('');
+    });
+
+    client.on('transcript', (event) => {
+      const message = event.data as TranscriptMessage;
+      const convMessage: ConversationMessage = {
+        role: message.role,
+        text: message.text,
+        timestamp: message.timestamp,
+        action: 'none',
+      };
+      setConversationHistory(prev => [...prev, convMessage]);
+      
+      // Process for actions
+      if (message.role === 'assistant') {
+        processVoiceCommand(message.text);
+      }
+    });
+
+    client.on('disconnected', () => {
+      console.log('Gemini Live disconnected');
+      setIsActive(false);
+      setIsConnecting(false);
+    });
+
+    client.on('error', (event) => {
+      console.error('Gemini Live error:', event.error);
+      setError('An error occurred. Please try again.');
+      setIsActive(false);
+      setIsConnecting(false);
+    });
 
     return () => {
-      if (vapiRef.current) {
-        vapiRef.current.stop();
+      if (geminiClientRef.current) {
+        geminiClientRef.current.disconnect();
       }
     };
   }, [isOpen]);
@@ -256,12 +283,21 @@ Respond ONLY with the JSON object, no additional text.
   }, [isOpen, isSpeaking, isActive]);
 
   // Toggle voice interaction
-  const toggleVoice = () => {
+  const toggleVoice = async () => {
     if (isActive) {
-      vapiRef.current?.stop();
+      geminiClientRef.current?.stopRecording();
+      geminiClientRef.current?.disconnect();
     } else {
       setIsConnecting(true);
-      vapiRef.current?.start('mock-assistant-id');
+      setError(null);
+      try {
+        await geminiClientRef.current?.connect();
+        await geminiClientRef.current?.startRecording();
+      } catch (error) {
+        setError('Failed to start voice interaction');
+        setIsConnecting(false);
+        console.error('Error starting Gemini Live:', error);
+      }
     }
   };
 

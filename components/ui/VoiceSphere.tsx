@@ -2,12 +2,10 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { GoogleGenAI } from '@google/genai'
-import Vapi from "@vapi-ai/web"
+import { createGeminiLiveClient, type GeminiLiveClient, type TranscriptMessage } from '@/lib/geminiLive'
 
 interface VoiceSphereProps {
   apiKey: string;
-  vapiPubKey: string;
-  vapiAssistantId: string;
   onGenerateVideo: (prompt: string) => void;
   onGenerateImage: (prompt: string) => void;
   onEditVideo: (prompt: string, videoId?: string) => void;
@@ -17,8 +15,6 @@ interface VoiceSphereProps {
 
 export default function VoiceSphere({ 
   apiKey, 
-  vapiPubKey, 
-  vapiAssistantId, 
   onGenerateVideo, 
   onGenerateImage, 
   onEditVideo, 
@@ -29,21 +25,21 @@ export default function VoiceSphere({
   const [isConnecting, setIsConnecting] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [conversationHistory, setConversationHistory] = useState<Array<{role: 'user' | 'assistant', text: string}>>([])
+  const [conversationHistory, setConversationHistory] = useState<TranscriptMessage[]>([])
   const [summary, setSummary] = useState('')
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false)
   
-  const vapiRef = useRef<Vapi | null>(null)
+  const geminiClientRef = useRef<GeminiLiveClient | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
 
   // Generate summary after session ends
-  const generateSummary = useCallback(async (history: Array<{role: 'user' | 'assistant', text: string}>) => {
+  const generateSummary = useCallback(async (history: TranscriptMessage[]) => {
     if (history.length === 0) return
     
     try {
       setIsGeneratingSummary(true)
-      const ai = new GoogleGenAI({ apiKey: "AIzaSyCGIqOfyKS6Ha0i4PgTsBZ8kXeomBJvRtQ" })
+      const ai = new GoogleGenAI({ apiKey })
       
       const conversationText = history.map(entry => 
         `${entry.role === 'user' ? 'User' : 'AI'}: ${entry.text}`
@@ -88,13 +84,25 @@ ${currentImagePrompt ? `Current image prompt: ${currentImagePrompt}` : ''}`
   }, [currentVideoId, currentImagePrompt])
 
 
-  // Initialize Vapi and set up event listeners
+  // Initialize Gemini Live client and set up event listeners
   useEffect(() => {
-    const vapiInstance = new Vapi("faafd76e-6da0-4fe6-84a9-8b7dbd2d7414")
-    vapiRef.current = vapiInstance
+    const client = createGeminiLiveClient({
+      apiKey,
+      systemPrompt: `You are a creative AI assistant for Veo 3 Studio. Help users create amazing videos and images through natural conversation. 
+When users describe what they want to create, enhance their ideas with professional production suggestions.
+Determine the appropriate action based on their request:
+- Generate new video
+- Generate new image  
+- Edit existing content
+- Just have a conversation
 
-    vapiInstance.on('call-start', () => {
-      console.log('Vapi call started')
+Be conversational, creative, and proactive.`,
+    })
+    
+    geminiClientRef.current = client
+
+    client.on('connected', () => {
+      console.log('Gemini Live connected')
       setIsConnecting(false)
       setIsActive(true)
       setError(null)
@@ -102,50 +110,85 @@ ${currentImagePrompt ? `Current image prompt: ${currentImagePrompt}` : ''}`
       setSummary('')
     })
 
-    vapiInstance.on('speech-start', () => {
+    client.on('speaking-start', () => {
       setIsSpeaking(true)
     })
 
-    vapiInstance.on('speech-end', () => {
+    client.on('speaking-end', () => {
       setIsSpeaking(false)
     })
 
-    vapiInstance.on('message', (message) => {
-      if (message.type === 'transcript' && message.transcript) {
-        setConversationHistory(prev => [...prev, { role: message.role, text: message.transcript }])
+    client.on('transcript', (event) => {
+      const message = event.data as TranscriptMessage
+      setConversationHistory(prev => [...prev, message])
+      
+      // Process assistant responses for actions
+      if (message.role === 'assistant') {
+        processAssistantResponse(message.text)
       }
     })
 
-    vapiInstance.on('call-end', () => {
-      console.log('Vapi call ended')
+    client.on('disconnected', () => {
+      console.log('Gemini Live disconnected')
       setIsActive(false)
       setIsConnecting(false)
-      // Use a function to get the latest state of conversationHistory
       setConversationHistory(currentHistory => {
         generateSummary(currentHistory)
         return currentHistory
       })
     })
 
-    vapiInstance.on('error', (e) => {
-      console.error('Vapi error:', e)
+    client.on('error', (event) => {
+      console.error('Gemini Live error:', event.error)
       setError('An error occurred. Please try again.')
       setIsActive(false)
       setIsConnecting(false)
     })
 
     return () => {
-      vapiInstance.stop()
+      if (geminiClientRef.current) {
+        geminiClientRef.current.disconnect()
+      }
     }
-  }, [generateSummary])
+  }, [apiKey, generateSummary])
+
+  // Process assistant response for actions
+  const processAssistantResponse = useCallback((text: string) => {
+    // Try to parse JSON response for actions
+    try {
+      const jsonMatch = text.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0])
+        
+        if (parsed.action === 'video' && parsed.prompt) {
+          onGenerateVideo(parsed.prompt)
+        } else if (parsed.action === 'image' && parsed.prompt) {
+          onGenerateImage(parsed.prompt)
+        } else if (parsed.action === 'edit' && parsed.prompt && currentVideoId) {
+          onEditVideo(parsed.prompt, currentVideoId)
+        }
+      }
+    } catch (e) {
+      // Not a JSON response, just conversational
+    }
+  }, [onGenerateVideo, onGenerateImage, onEditVideo, currentVideoId])
 
   // Toggle voice interaction
-  const toggleVoice = () => {
+  const toggleVoice = async () => {
     if (isActive) {
-      vapiRef.current?.stop()
+      geminiClientRef.current?.stopRecording()
+      geminiClientRef.current?.disconnect()
     } else {
       setIsConnecting(true)
-      vapiRef.current?.start("a989c3c1-3565-439e-aa81-ba8e6bd7122d")
+      setError(null)
+      try {
+        await geminiClientRef.current?.connect()
+        await geminiClientRef.current?.startRecording()
+      } catch (error) {
+        setError('Failed to start voice interaction')
+        setIsConnecting(false)
+        console.error('Error starting Gemini Live:', error)
+      }
     }
   }
 

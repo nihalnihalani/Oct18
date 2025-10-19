@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { GoogleGenAI } from '@google/genai'
-import Vapi from "@vapi-ai/web"
+import { createGeminiLiveClient, type GeminiLiveClient } from '@/lib/geminiLive'
 
 interface RealVoiceAgentProps {
   onGenerateVideo: (prompt: string) => void
@@ -28,7 +28,7 @@ export default function RealVoiceAgent({
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false)
   const [isProcessingCommand, setIsProcessingCommand] = useState(false)
   
-  const vapiRef = useRef<Vapi | null>(null)
+  const vapiRef = useRef<any | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const aiRef = useRef<GoogleGenAI | null>(null)
 
@@ -69,14 +69,18 @@ Respond ONLY with the JSON object, no additional text.
 `;
 
     try {
-      const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
-      const result = await model.generateContent([
-        { text: context },
-        { text: userInput }
-      ]);
+      const result = await ai.models.generateContent({
+        model: "gemini-1.5-flash",
+        contents: [{
+          role: 'user',
+          parts: [
+            { text: context },
+            { text: userInput }
+          ]
+        }]
+      });
 
-      const response = await result.response;
-      const responseText = response.text().trim();
+      const responseText = (result.text || '').trim();
 
       // Parse JSON response
       try {
@@ -207,8 +211,7 @@ If the user wants to create content, use the creative brief to generate a detail
         }]
       })
       
-      const response = await result.response
-      const responseText = response.text().trim()
+      const responseText = (result.text || '').trim()
       
       try {
         const command = JSON.parse(responseText)
